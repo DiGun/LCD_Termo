@@ -1,0 +1,14 @@
+
+Debug/LCD_Termo.elf
+Debug/LCD_Termo.hex
+Debug/LCD_Termo.map
+Debug/lcdpcf8574.d
+Debug/lcdpcf8574.o
+Debug/main.d
+Debug/main.o
+Debug/music.d
+Debug/music.o
+Debug/pcf8574.d
+Debug/pcf8574.o
+Debug/twimaster.d
+Debug/twimaster.o
