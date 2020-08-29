@@ -176,6 +176,19 @@ void play_check()
 	*/
 }
 
+//*** Buttons
+
+#define 
+
+void btn_init(void)
+{
+	
+	
+	
+}
+
+
+
 void quick_fn(void)
 {
   static uint8_t last_tick=255;
