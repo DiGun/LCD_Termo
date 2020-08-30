@@ -4,6 +4,7 @@
 #include <avr/pgmspace.h>
 #include <avr/interrupt.h>
 // #define F_CPU 16000000UL
+// #define F_CPU  8000000UL
 #include <util/delay.h>
 
 #include "lcdpcf8574.h"
@@ -12,6 +13,69 @@
 
 
 // #define PIN(x) (*(&x - 2))    /* address of input register of port x */
+
+//*** Buttons
+
+#define BTN_1			(1<<PORTD0)
+#define BTN_2			(1<<PORTD1)
+#define BTN_3			(1<<PORTD2)
+#define BTN_4			(1<<PORTD3)
+#define BTN_DDR			DDRD
+#define BTN_IN			PIND
+#define BTN_OUT			PORTD
+
+
+void btn_init(void)
+{
+	BTN_DDR&= ~(BTN_1|BTN_2|BTN_3|BTN_4);
+//	BTN_OUT|= (BTN1|BTN2|BTN3|BTN4);
+}
+
+#define BTN_CNT 4
+
+uint8_t btn_last_state[BTN_CNT];
+uint8_t btn_press_ev[BTN_CNT];
+uint8_t btn_press[BTN_CNT];
+
+void btn_check(void)
+{
+	uint8_t btn[BTN_CNT];
+	btn[0]=BTN_IN&BTN_1;
+	btn[1]=BTN_IN&BTN_2;
+	btn[2]=BTN_IN&BTN_3;
+	btn[3]=BTN_IN&BTN_4;
+	
+	for (uint8_t f=0; f<BTN_CNT;f++)
+	{
+		btn_last_state[f]<<=1;
+		if (btn[f])
+		{
+			btn_last_state[f]|=1;
+		}
+		else
+		{
+			btn_last_state[f]&=~1;
+		}
+		if (btn_last_state[f]==0)
+		{
+				if (btn_press[f]!=0)
+				{
+					btn_press[f]=0;
+				}
+		}
+		else
+		{
+			if (btn_last_state[f]>=0b01111111)
+			{
+				if (btn_press[f]==0)
+				{
+					btn_press_ev[f]=1;
+					btn_press[f]=1;
+				}
+			}
+		}
+	}
+}
 
 
 const char PROGMEM char_down_p[8]  ={
@@ -176,16 +240,6 @@ void play_check()
 	*/
 }
 
-//*** Buttons
-
-#define 
-
-void btn_init(void)
-{
-	
-	
-	
-}
 
 
 
@@ -200,6 +254,7 @@ void quick_fn(void)
 		seconds++;
 	}
 	play_check();
+	btn_check();
   }
 }
 

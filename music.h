@@ -9,7 +9,7 @@
 #ifndef MUSIC_H_
 #define MUSIC_H_
 
-#define SOUND			(1<<PORTC0)
+#define SOUND			(1<<PORTC3)
 #define SOUND_DDR       DDRC
 #define SOUND_OUT		PORTC
 
