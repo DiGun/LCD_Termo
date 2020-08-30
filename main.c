@@ -322,7 +322,7 @@ int main(void)
 	play_melody=0;
 	seconds=0;
 	mus_init();
-	
+	btn_init();
 	sei();
 	
 	//init lcd
@@ -369,12 +369,44 @@ int main(void)
 //			_delay_ms(10);
 		}
 */		
-	uint8_t f=0;
+	uint8_t f=255;
 	mus_play_p(melod2_p, MEL2,1);	
 	play_melody=1;
 
 	while(1) {
-
+		if (f>32)
+		{
+			f=0;
+			lcd_clrscr();
+		}
+		quick_fn();
+		if (btn_press_ev[0]!=0)
+		{
+			f++;
+			lcd_putc(0x7E);
+			btn_press_ev[0]=0;	
+		}
+		if (btn_press_ev[1]!=0)
+		{
+			f++;
+			lcd_putc(0x7F);
+			btn_press_ev[1]=0;
+		}
+		if (btn_press_ev[2]!=0)
+		{
+			f++;
+			lcd_putc(0x00);
+			btn_press_ev[2]=0;
+		}
+		if (btn_press_ev[3]!=0)
+		{
+			f++;
+			lcd_putc(0x01);
+			btn_press_ev[3]=0;
+		}
+		
+		
+/*
 		pause(4);
 //		_delay_ms(4000);
 		
@@ -413,6 +445,7 @@ int main(void)
 //		led = !led; //invert led for next loop
 		f++;
 		//test loop
+		*/
 	}
 }
 
