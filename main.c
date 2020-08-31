@@ -28,7 +28,9 @@
 void btn_init(void)
 {
 	BTN_DDR&= ~(BTN_1|BTN_2|BTN_3|BTN_4);
-//	BTN_OUT|= (BTN1|BTN2|BTN3|BTN4);
+//	BTN_OUT&= ~(BTN_1|BTN_2|BTN_3|BTN_4);
+
+	BTN_OUT|= (BTN_1|BTN_2|BTN_3|BTN_4);
 }
 
 #define BTN_CNT 4
@@ -48,7 +50,7 @@ void btn_check(void)
 	for (uint8_t f=0; f<BTN_CNT;f++)
 	{
 		btn_last_state[f]<<=1;
-		if (btn[f])
+		if (btn[f]==0)
 		{
 			btn_last_state[f]|=1;
 		}
@@ -58,7 +60,7 @@ void btn_check(void)
 		}
 		if (btn_last_state[f]==0)
 		{
-				if (btn_press[f]!=0)
+//				if (btn_press[f]!=0)
 				{
 					btn_press[f]=0;
 				}
@@ -312,6 +314,23 @@ void test(const note_t* ntp)
 }
 */
 
+void print_bin(uint8_t b)
+{
+     lcd_gotoxy(0, 1);
+
+	 for(uint8_t f=0;f<8;f++)
+	 {
+		 if (((b>>f)&1)==0)
+		 {
+			 lcd_putc('0');
+		 }
+		 else
+		 {
+			 lcd_putc('1');
+		 }
+	 }
+}
+
 int main(void)
 {
 	//init switch
@@ -370,39 +389,49 @@ int main(void)
 		}
 */		
 	uint8_t f=255;
-	mus_play_p(melod2_p, MEL2,1);	
-	play_melody=1;
+//	mus_play_p(melod2_p, MEL2,1);	
+//	play_melody=1;
 
 	while(1) {
-		if (f>32)
+		if (f>16)
 		{
 			f=0;
-			lcd_clrscr();
+			lcd_gotoxy(0, 0);
+			lcd_puts_P("                ");
+//			lcd_clrscr();
 		}
 		quick_fn();
 		if (btn_press_ev[0]!=0)
 		{
-			f++;
+			lcd_gotoxy(f, 0);
 			lcd_putc(0x7E);
+			print_bin(BTN_IN);
 			btn_press_ev[0]=0;	
+			f++;
 		}
 		if (btn_press_ev[1]!=0)
 		{
-			f++;
+			lcd_gotoxy(f, 0);
 			lcd_putc(0x7F);
+			print_bin(BTN_IN);
 			btn_press_ev[1]=0;
+			f++;
 		}
 		if (btn_press_ev[2]!=0)
 		{
-			f++;
+			lcd_gotoxy(f, 0);
 			lcd_putc(0x00);
+			print_bin(BTN_IN);
 			btn_press_ev[2]=0;
+			f++;
 		}
 		if (btn_press_ev[3]!=0)
 		{
-			f++;
+			lcd_gotoxy(f, 0);
 			lcd_putc(0x01);
+			print_bin(BTN_IN);
 			btn_press_ev[3]=0;
+			f++;
 		}
 		
 		
