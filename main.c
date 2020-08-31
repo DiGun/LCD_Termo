@@ -317,9 +317,10 @@ void test(const note_t* ntp)
 void print_bin(uint8_t b)
 {
      lcd_gotoxy(0, 1);
-
-	 for(uint8_t f=0;f<8;f++)
+	 uint8_t f=8;
+	 while(1)
 	 {
+		 f--;
 		 if (((b>>f)&1)==0)
 		 {
 			 lcd_putc('0');
@@ -327,6 +328,10 @@ void print_bin(uint8_t b)
 		 else
 		 {
 			 lcd_putc('1');
+		 }
+		 if (f==0)
+		 {
+			 return;
 		 }
 	 }
 }
@@ -403,32 +408,36 @@ int main(void)
 		quick_fn();
 		if (btn_press_ev[0]!=0)
 		{
+			// left
 			lcd_gotoxy(f, 0);
-			lcd_putc(0x7E);
+			lcd_putc(0x7F);
 			print_bin(BTN_IN);
 			btn_press_ev[0]=0;	
 			f++;
 		}
 		if (btn_press_ev[1]!=0)
 		{
+			// right
 			lcd_gotoxy(f, 0);
-			lcd_putc(0x7F);
+			lcd_putc(0x7E);
 			print_bin(BTN_IN);
 			btn_press_ev[1]=0;
 			f++;
 		}
 		if (btn_press_ev[2]!=0)
 		{
+			// up
 			lcd_gotoxy(f, 0);
-			lcd_putc(0x00);
+			lcd_putc(0x01);
 			print_bin(BTN_IN);
 			btn_press_ev[2]=0;
 			f++;
 		}
 		if (btn_press_ev[3]!=0)
 		{
+			// down
 			lcd_gotoxy(f, 0);
-			lcd_putc(0x01);
+			lcd_putc(0x00);
 			print_bin(BTN_IN);
 			btn_press_ev[3]=0;
 			f++;
