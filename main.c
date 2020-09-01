@@ -336,6 +336,103 @@ void print_bin(uint8_t b)
 	 }
 }
 
+
+uint8_t menu_mode;
+uint8_t menu_mode_select;
+
+#define MENU_MODE_SEL 1
+#define MENU_MODE_SEL_MAX 4
+#define MENU_MODE_SEL_MAXS (MENU_MODE_SEL_MAX+1)
+
+void print_blank(uint8_t c)
+{
+	for(uint8_t f=0;f<c;f++)
+	{
+		lcd_putc(' ');
+	}
+}
+
+void menu(void)
+{
+	static uint8_t old_mode=0;
+	static uint8_t old_mode_select=0;
+	if (old_mode!=menu_mode)
+	{
+		old_mode=menu_mode;
+		switch(menu_mode)
+		{
+			case MENU_MODE_SEL:
+			lcd_gotoxy(0, 0);
+			lcd_puts_P("Mode:");
+			break;
+		}
+	}
+	if ((menu_mode==MENU_MODE_SEL)&&(old_mode_select!=menu_mode_select))
+	{
+		lcd_gotoxy(5, 0);
+		lcd_putc('-');
+		if (menu_mode_select==MENU_MODE_SEL_MAXS)
+		{
+			lcd_puts_P("settings");
+		}
+		else
+		{
+			lcd_putc('0'+menu_mode_select);
+			if (old_mode_select==MENU_MODE_SEL_MAXS)
+			{
+				print_blank(7);
+			}
+		}
+		old_mode_select=menu_mode_select;
+	}
+}
+
+
+void btn_event_release(void)
+{
+		if (btn_press_ev[0]!=0)
+		{
+			// left
+			btn_press_ev[0]=0;
+			switch(menu_mode)
+			{
+				case MENU_MODE_SEL:
+				menu_mode_select--;
+				if (menu_mode_select==0)
+				{
+					menu_mode_select=MENU_MODE_SEL_MAXS;
+				}
+				break;
+			}
+		}
+		if (btn_press_ev[1]!=0)
+		{
+			// right
+			btn_press_ev[1]=0;
+			switch(menu_mode)
+			{
+				case MENU_MODE_SEL:
+				menu_mode_select++;
+				if (menu_mode_select>(MENU_MODE_SEL_MAXS))
+				{
+					menu_mode_select=1;
+				}
+				break;
+			}
+		}
+		if (btn_press_ev[2]!=0)
+		{
+			// up
+			btn_press_ev[2]=0;
+		}
+		if (btn_press_ev[3]!=0)
+		{
+			// down
+			btn_press_ev[3]=0;
+		}
+	
+}
+
 int main(void)
 {
 	//init switch
@@ -347,6 +444,8 @@ int main(void)
 	seconds=0;
 	mus_init();
 	btn_init();
+	menu_mode=0;
+	menu_mode_select=1;
 	sei();
 	
 	//init lcd
@@ -363,8 +462,9 @@ int main(void)
 	lcd_gotoxy(0, 1);
 	lcd_putc(0);
 	lcd_putc(1);
-/*	
+	
 	_delay_ms(1000);
+/*
 	while (1)
 	{
 		test(melod2_p);
@@ -393,19 +493,21 @@ int main(void)
 //			_delay_ms(10);
 		}
 */		
-	uint8_t f=255;
+//	uint8_t f=255;
 //	mus_play_p(melod2_p, MEL2,1);	
 //	play_melody=1;
 
-	while(1) {
-		if (f>16)
-		{
-			f=0;
+
+			lcd_clrscr();
 			lcd_gotoxy(0, 0);
-			lcd_puts_P("                ");
-//			lcd_clrscr();
-		}
+//			print_blank(16);
+
+	while(1) 
+	{
 		quick_fn();
+		btn_event_release();
+		menu();
+/*		
 		if (btn_press_ev[0]!=0)
 		{
 			// left
@@ -443,7 +545,7 @@ int main(void)
 			f++;
 		}
 		
-		
+*/		
 /*
 		pause(4);
 //		_delay_ms(4000);
