@@ -354,7 +354,7 @@ void print_blank(uint8_t c)
 
 void menu(void)
 {
-	static uint8_t old_mode=0;
+	static uint8_t old_mode=0xff;
 	static uint8_t old_mode_select=0;
 	if (old_mode!=menu_mode)
 	{
@@ -370,7 +370,6 @@ void menu(void)
 	if ((menu_mode==MENU_MODE_SEL)&&(old_mode_select!=menu_mode_select))
 	{
 		lcd_gotoxy(5, 0);
-		lcd_putc('-');
 		if (menu_mode_select==MENU_MODE_SEL_MAXS)
 		{
 			lcd_puts_P("settings");
@@ -444,7 +443,7 @@ int main(void)
 	seconds=0;
 	mus_init();
 	btn_init();
-	menu_mode=0;
+	menu_mode=MENU_MODE_SEL;
 	menu_mode_select=1;
 	sei();
 	
