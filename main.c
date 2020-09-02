@@ -94,7 +94,7 @@ void btn_check(void)
 		}
 		else
 		{
-			if (btn_last_state[f]>=0b01111111)
+			if (btn_last_state[f]>=0b00111111)
 			{
 				if (btn_press[f]==0)
 				{
@@ -368,7 +368,10 @@ uint8_t menu_mode;
 uint8_t menu_mode_select;
 uint8_t menu_mode_param;
 
+#define MENU_MODE_PARAM 2
 #define MENU_MODE_SEL 1
+
+
 #define MENU_MODE_SEL_MAX	MODE_SEL_MAX
 #define MENU_MODE_SEL_MAXS	(MENU_MODE_SEL_MAX+1)
 
@@ -383,12 +386,12 @@ void print_blank(uint8_t c)
 void menu(void)
 {
 	static uint8_t old_mode=0xff;
-	static uint8_t old_mode_select=0;
-	static uint8_t old_menu_mode_param=0;
+	static uint8_t old_mode_select=0xff;
+	static uint8_t old_menu_mode_param=0xff;
 
 	
 	
-	if (old_mode!=menu_mode)
+	if ((old_mode!=menu_mode)||(old_menu_mode_param!=menu_mode_param))
 	{
 		old_mode=menu_mode;
 		switch(menu_mode)
@@ -398,6 +401,24 @@ void menu(void)
 			lcd_puts_P("Mode:");
 			lcd_gotoxy(0, 1);
 			lcd_puts_P("Select");
+			old_menu_mode_param=0xff;
+			break;
+			case MENU_MODE_PARAM:
+				lcd_gotoxy(0, 1);
+				switch(menu_mode_param)
+				{
+					case 1:
+						lcd_puts_P("Type:");
+						break;
+					case 2:
+						lcd_puts_P("Temp:");
+						break;
+					case 3:
+						lcd_puts_P("Time:");
+						break;
+					
+				}
+				old_menu_mode_param=menu_mode_param;
 			break;
 		}
 	}
@@ -431,9 +452,17 @@ void btn_event_release(void)
 			{
 				case MENU_MODE_SEL:
 				menu_mode_select--;
+//				menu_mode_param=0;
 				if (menu_mode_select==0)
 				{
 					menu_mode_select=MENU_MODE_SEL_MAXS;
+				}
+				break;
+				case MENU_MODE_PARAM:
+				menu_mode_param--;
+				if (menu_mode_param==0)
+				{
+					menu_mode_param=MODE_PARAM_CNT;
 				}
 				break;
 			}
@@ -446,9 +475,17 @@ void btn_event_release(void)
 			{
 				case MENU_MODE_SEL:
 				menu_mode_select++;
+//				menu_mode_param=0;
 				if (menu_mode_select>(MENU_MODE_SEL_MAXS))
 				{
 					menu_mode_select=1;
+				}
+				break;
+				case MENU_MODE_PARAM:
+				menu_mode_param++;
+				if (menu_mode_param>(MODE_PARAM_CNT))
+				{
+					menu_mode_param=1;
 				}
 				break;
 			}
@@ -457,11 +494,27 @@ void btn_event_release(void)
 		{
 			// up
 			btn_press_ev[2]=0;
+			switch(menu_mode)
+			{
+				case MENU_MODE_PARAM:
+					menu_mode=MENU_MODE_SEL;
+					break;
+			}
+
+			
 		}
 		if (btn_press_ev[3]!=0)
 		{
 			// down
 			btn_press_ev[3]=0;
+			switch(menu_mode)
+			{
+				case MENU_MODE_SEL:
+				menu_mode=MENU_MODE_PARAM;
+				menu_mode_param=1;
+				break;
+			}
+			
 		}
 	
 }
@@ -479,6 +532,7 @@ int main(void)
 	btn_init();
 	menu_mode=MENU_MODE_SEL;
 	menu_mode_select=1;
+	menu_mode_param=1;
 	sei();
 	
 	//init lcd
