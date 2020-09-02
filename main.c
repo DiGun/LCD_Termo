@@ -6,9 +6,36 @@
 // #define F_CPU 16000000UL
 // #define F_CPU  8000000UL
 #include <util/delay.h>
+#include <avr/eeprom.h>
 
 #include "lcdpcf8574.h"
 #include "music.h"
+
+
+
+/* mode
+0	-	off
+1	-	on heater and wait for needed temp
+2	-	hold temp needed time
+3	-	off heater and wait for time
+4	-	off heater and wait for temp
+*/
+
+typedef struct mode_work_st {
+	uint8_t mode;
+	uint8_t temp;
+	uint16_t sec;
+} mode_work_t;
+
+#define MODE_PARAM_CNT 3
+
+
+#define MODE_SEL_MAX 4
+
+mode_work_t EEMEM mode_work[MODE_SEL_MAX];
+
+mode_work_t mode_work_cur;
+
 
 
 
@@ -339,10 +366,11 @@ void print_bin(uint8_t b)
 
 uint8_t menu_mode;
 uint8_t menu_mode_select;
+uint8_t menu_mode_param;
 
 #define MENU_MODE_SEL 1
-#define MENU_MODE_SEL_MAX 4
-#define MENU_MODE_SEL_MAXS (MENU_MODE_SEL_MAX+1)
+#define MENU_MODE_SEL_MAX	MODE_SEL_MAX
+#define MENU_MODE_SEL_MAXS	(MENU_MODE_SEL_MAX+1)
 
 void print_blank(uint8_t c)
 {
@@ -356,6 +384,10 @@ void menu(void)
 {
 	static uint8_t old_mode=0xff;
 	static uint8_t old_mode_select=0;
+	static uint8_t old_menu_mode_param=0;
+
+	
+	
 	if (old_mode!=menu_mode)
 	{
 		old_mode=menu_mode;
@@ -364,6 +396,8 @@ void menu(void)
 			case MENU_MODE_SEL:
 			lcd_gotoxy(0, 0);
 			lcd_puts_P("Mode:");
+			lcd_gotoxy(0, 1);
+			lcd_puts_P("Select");
 			break;
 		}
 	}
