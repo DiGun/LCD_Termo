@@ -94,7 +94,7 @@ void btn_check(void)
 		}
 		else
 		{
-			if (btn_last_state[f]>=0b00111111)
+			if (btn_last_state[f]>=0b00011111)
 			{
 				if (btn_press[f]==0)
 				{
@@ -383,62 +383,65 @@ void print_blank(uint8_t c)
 	}
 }
 
+
+uint8_t sh_menu;
+#define SHOW_NONE 0
+#define SHOW_MENU_MODE 1
+#define SHOW_MENU_MODE_SELECT 2
+#define SHOW_MENU_MODE_PARAM 3
+
+
+
 void menu(void)
 {
-	static uint8_t old_mode=0xff;
-	static uint8_t old_mode_select=0xff;
-	static uint8_t old_menu_mode_param=0xff;
-
-	
-	
-	if ((old_mode!=menu_mode)||(old_menu_mode_param!=menu_mode_param))
+	switch (sh_menu)
 	{
-		old_mode=menu_mode;
-		switch(menu_mode)
-		{
-			case MENU_MODE_SEL:
+		case SHOW_MENU_MODE:
+			sh_menu=SHOW_MENU_MODE_SELECT;
 			lcd_gotoxy(0, 0);
 			lcd_puts_P("Mode:");
 			lcd_gotoxy(0, 1);
 			lcd_puts_P("Select");
-			old_menu_mode_param=0xff;
-			break;
-			case MENU_MODE_PARAM:
-				lcd_gotoxy(0, 1);
+		break;
+		case SHOW_MENU_MODE_SELECT:
+			sh_menu=SHOW_NONE;
+			lcd_gotoxy(5, 0);
+			if (menu_mode_select==MENU_MODE_SEL_MAXS)
+			{
+				lcd_puts_P("settings");
+			}
+			else
+			{
+				lcd_putc('0'+menu_mode_select);
+				print_blank(7);
+			}
+		break;
+		case SHOW_MENU_MODE_PARAM:
+			sh_menu=SHOW_NONE;
+			lcd_gotoxy(0, 1);
 				switch(menu_mode_param)
 				{
 					case 1:
-						lcd_puts_P("Type:");
-						break;
+					lcd_puts_P("Type:");
+					break;
 					case 2:
-						lcd_puts_P("Temp:");
-						break;
+					lcd_puts_P("Temp:");
+					break;
 					case 3:
-						lcd_puts_P("Time:");
-						break;
+					lcd_puts_P("Time:");
+					break;
 					
 				}
-				old_menu_mode_param=menu_mode_param;
-			break;
-		}
+		break;					
 	}
-	if ((menu_mode==MENU_MODE_SEL)&&(old_mode_select!=menu_mode_select))
-	{
-		lcd_gotoxy(5, 0);
-		if (menu_mode_select==MENU_MODE_SEL_MAXS)
-		{
-			lcd_puts_P("settings");
-		}
-		else
-		{
-			lcd_putc('0'+menu_mode_select);
-			if (old_mode_select==MENU_MODE_SEL_MAXS)
-			{
-				print_blank(7);
-			}
-		}
-		old_mode_select=menu_mode_select;
-	}
+		
+
+
+
+
+/*	
+
+	*/
 }
 
 
@@ -451,14 +454,15 @@ void btn_event_release(void)
 			switch(menu_mode)
 			{
 				case MENU_MODE_SEL:
+				sh_menu=SHOW_MENU_MODE_SELECT;
 				menu_mode_select--;
-//				menu_mode_param=0;
 				if (menu_mode_select==0)
 				{
 					menu_mode_select=MENU_MODE_SEL_MAXS;
 				}
 				break;
 				case MENU_MODE_PARAM:
+				sh_menu=SHOW_MENU_MODE_PARAM;
 				menu_mode_param--;
 				if (menu_mode_param==0)
 				{
@@ -474,14 +478,15 @@ void btn_event_release(void)
 			switch(menu_mode)
 			{
 				case MENU_MODE_SEL:
+				sh_menu=SHOW_MENU_MODE_SELECT;
 				menu_mode_select++;
-//				menu_mode_param=0;
 				if (menu_mode_select>(MENU_MODE_SEL_MAXS))
 				{
 					menu_mode_select=1;
 				}
 				break;
 				case MENU_MODE_PARAM:
+				sh_menu=SHOW_MENU_MODE_PARAM;
 				menu_mode_param++;
 				if (menu_mode_param>(MODE_PARAM_CNT))
 				{
@@ -497,6 +502,7 @@ void btn_event_release(void)
 			switch(menu_mode)
 			{
 				case MENU_MODE_PARAM:
+					sh_menu=SHOW_MENU_MODE;
 					menu_mode=MENU_MODE_SEL;
 					break;
 			}
@@ -510,6 +516,7 @@ void btn_event_release(void)
 			switch(menu_mode)
 			{
 				case MENU_MODE_SEL:
+				sh_menu=SHOW_MENU_MODE_PARAM;
 				menu_mode=MENU_MODE_PARAM;
 				menu_mode_param=1;
 				break;
@@ -530,6 +537,7 @@ int main(void)
 	seconds=0;
 	mus_init();
 	btn_init();
+	sh_menu=SHOW_MENU_MODE;
 	menu_mode=MENU_MODE_SEL;
 	menu_mode_select=1;
 	menu_mode_param=1;
