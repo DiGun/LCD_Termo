@@ -368,6 +368,7 @@ uint8_t menu_mode;
 uint8_t menu_mode_select;
 uint8_t menu_mode_param;
 
+#define MENU_MODE_PARAM_EDIT 3
 #define MENU_MODE_PARAM 2
 #define MENU_MODE_SEL 1
 
@@ -389,6 +390,7 @@ uint8_t sh_menu;
 #define SHOW_MENU_MODE 1
 #define SHOW_MENU_MODE_SELECT 2
 #define SHOW_MENU_MODE_PARAM 3
+#define SHOW_MENU_MODE_PARAM_EDIT 4
 
 
 
@@ -419,20 +421,35 @@ void menu(void)
 		case SHOW_MENU_MODE_PARAM:
 			sh_menu=SHOW_NONE;
 			lcd_gotoxy(0, 1);
+			mode_work_cur.mode=11;
+			mode_work_cur.temp=22;
+			mode_work_cur.sec=33;
+			char buff[4];
 				switch(menu_mode_param)
 				{
 					case 1:
 					lcd_puts_P("Type:");
+					itoa(mode_work_cur.mode,buff,10);
+					lcd_puts(buff);
 					break;
 					case 2:
 					lcd_puts_P("Temp:");
+					itoa(mode_work_cur.temp,buff,10);
+					lcd_puts(buff);
 					break;
 					case 3:
 					lcd_puts_P("Time:");
+					itoa(mode_work_cur.sec,buff,10);
+					lcd_puts(buff);
 					break;
-					
 				}
-		break;					
+		break;
+		case SHOW_MENU_MODE_PARAM_EDIT:
+			sh_menu=SHOW_NONE;
+			lcd_gotoxy(4, 1);
+			lcd_putc('>');
+		break;
+
 	}
 		
 
@@ -505,9 +522,12 @@ void btn_event_release(void)
 					sh_menu=SHOW_MENU_MODE;
 					menu_mode=MENU_MODE_SEL;
 					break;
-			}
+				case MENU_MODE_PARAM_EDIT:
+					sh_menu=SHOW_MENU_MODE_PARAM;
+					menu_mode=MENU_MODE_PARAM;
+				break;
 
-			
+			}
 		}
 		if (btn_press_ev[3]!=0)
 		{
@@ -516,11 +536,17 @@ void btn_event_release(void)
 			switch(menu_mode)
 			{
 				case MENU_MODE_SEL:
-				sh_menu=SHOW_MENU_MODE_PARAM;
-				menu_mode=MENU_MODE_PARAM;
-				menu_mode_param=1;
+					sh_menu=SHOW_MENU_MODE_PARAM;
+					menu_mode=MENU_MODE_PARAM;
+					menu_mode_param=1;
 				break;
+				case MENU_MODE_PARAM:
+					sh_menu=SHOW_MENU_MODE_PARAM_EDIT;
+					menu_mode=MENU_MODE_PARAM_EDIT;
+				break;
+
 			}
+
 			
 		}
 	
