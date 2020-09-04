@@ -21,7 +21,7 @@
 4	-	off heater and wait for temp
 */
 
-#define  MODE_TYPE_CNT 5
+#define  MODE_TYPE_MAX 4
 
 typedef struct mode_work_st {
 	uint8_t mode;
@@ -378,12 +378,76 @@ uint8_t menu_mode_param;
 #define MENU_MODE_SEL_MAX	MODE_SEL_MAX
 #define MENU_MODE_SEL_MAXS	(MENU_MODE_SEL_MAX+1)
 
+void eep_load(void)
+{
+	//	eeprom_write_block(&info, (uint16_t*)eepromAddress, sizeof(info));
+
+	eeprom_read_block(&mode_work_cur, &mode_work[menu_mode_select], sizeof(mode_work_t));
+
+}
+
+void eep_save(void)
+{
+	eeprom_write_block(&mode_work_cur, &mode_work[menu_mode_select], sizeof(mode_work_t));
+
+	//	eeprom_read_block(&mode_work_cur, (uint16_t*)mode_work[menu_mode_select], sizeof(mode_work_t));
+
+}
+
 void print_blank(uint8_t c)
 {
 	for(uint8_t f=0;f<c;f++)
 	{
 		lcd_putc(' ');
 	}
+}
+
+
+
+void edit_mode_param(int8_t dir)
+{
+	lcd_gotoxy(5, 1);
+	char buff[4];
+	switch(menu_mode_param)
+	{
+		case 1:
+		mode_work_cur.mode+=dir;
+		if (mode_work_cur.mode==255)
+		{
+			mode_work_cur.mode=MODE_TYPE_MAX;
+		}
+		if (mode_work_cur.mode>MODE_TYPE_MAX)
+		{
+			mode_work_cur.mode=0;
+		}
+		itoa(mode_work_cur.mode,buff,10);
+		lcd_puts(buff);
+		break;
+		case 2:
+		mode_work_cur.temp+=dir;
+		itoa(mode_work_cur.temp,buff,10);
+		lcd_puts(buff);
+		break;
+		case 3:
+		{
+			uint16_t minut;
+			minut=mode_work_cur.sec/60;
+			minut+=dir;
+			if (minut>1024)
+			{
+			minut=1024;
+			}
+			if (minut==0)
+			{
+				minut=1;
+			}
+			itoa(minut,buff,10);
+			lcd_puts(buff);
+			mode_work_cur.sec=minut*60;
+		}
+		break;
+	}
+	eep_save();
 }
 
 
@@ -394,7 +458,6 @@ uint8_t sh_menu;
 #define SHOW_MENU_MODE_PARAM 3
 #define SHOW_MENU_MODE_PARAM_EDIT 4
 #define SHOW_MENU_MODE_PARAM_EDIT_VALUE 5
-
 
 
 void menu(void)
@@ -424,75 +487,33 @@ void menu(void)
 		case SHOW_MENU_MODE_PARAM:
 			sh_menu=SHOW_NONE;
 			lcd_gotoxy(0, 1);
+/*			
 			mode_work_cur.mode=11;
 			mode_work_cur.temp=22;
 			mode_work_cur.sec=33;
-			char buff[4];
+*/
+			eep_load();			
 				switch(menu_mode_param)
 				{
 					case 1:
 					lcd_puts_P("Type:");
-					itoa(mode_work_cur.mode,buff,10);
-					lcd_puts(buff);
 					break;
 					case 2:
 					lcd_puts_P("Temp:");
-					itoa(mode_work_cur.temp,buff,10);
-					lcd_puts(buff);
 					break;
 					case 3:
 					lcd_puts_P("Time:");
-					itoa(mode_work_cur.sec,buff,10);
-					lcd_puts(buff);
 					break;
 				}
+				edit_mode_param(0);
 		break;
 		case SHOW_MENU_MODE_PARAM_EDIT:
 			sh_menu=SHOW_NONE;
 			lcd_gotoxy(4, 1);
 			lcd_putc('>');
 		break;
-
 	}
-		
-
-
-
-
-/*	
-
-	*/
 }
-
-
-void edit_mode_param(int8_t dir)
-{
-	lcd_gotoxy(5, 1);
-	char buff[4];
-	switch(menu_mode_param)
-				{
-					case 1:
-					mode_work_cur.mode+=dir;
-					if (mode_work_cur.mode==0)
-					{
-						mode_work_cur.mode=
-					}
-					itoa(mode_work_cur.mode,buff,10);
-					lcd_puts(buff);
-					break;
-					case 2:
-					mode_work_cur.temp+=dir;
-					itoa(mode_work_cur.temp,buff,10);
-					lcd_puts(buff);
-					break;
-					case 3:
-					mode_work_cur.sec+=dir;
-					itoa(mode_work_cur.sec,buff,10);
-					lcd_puts(buff);
-					break;
-				}
-}
-
 
 void btn_event_release(void)
 {
