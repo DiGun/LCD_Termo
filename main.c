@@ -21,6 +21,8 @@
 4	-	off heater and wait for temp
 */
 
+#define  MODE_TYPE_CNT 5
+
 typedef struct mode_work_st {
 	uint8_t mode;
 	uint8_t temp;
@@ -391,6 +393,7 @@ uint8_t sh_menu;
 #define SHOW_MENU_MODE_SELECT 2
 #define SHOW_MENU_MODE_PARAM 3
 #define SHOW_MENU_MODE_PARAM_EDIT 4
+#define SHOW_MENU_MODE_PARAM_EDIT_VALUE 5
 
 
 
@@ -462,6 +465,35 @@ void menu(void)
 }
 
 
+void edit_mode_param(int8_t dir)
+{
+	lcd_gotoxy(5, 1);
+	char buff[4];
+	switch(menu_mode_param)
+				{
+					case 1:
+					mode_work_cur.mode+=dir;
+					if (mode_work_cur.mode==0)
+					{
+						mode_work_cur.mode=
+					}
+					itoa(mode_work_cur.mode,buff,10);
+					lcd_puts(buff);
+					break;
+					case 2:
+					mode_work_cur.temp+=dir;
+					itoa(mode_work_cur.temp,buff,10);
+					lcd_puts(buff);
+					break;
+					case 3:
+					mode_work_cur.sec+=dir;
+					itoa(mode_work_cur.sec,buff,10);
+					lcd_puts(buff);
+					break;
+				}
+}
+
+
 void btn_event_release(void)
 {
 		if (btn_press_ev[0]!=0)
@@ -486,6 +518,11 @@ void btn_event_release(void)
 					menu_mode_param=MODE_PARAM_CNT;
 				}
 				break;
+				case MENU_MODE_PARAM_EDIT:
+				sh_menu=SHOW_MENU_MODE_PARAM_EDIT;
+				edit_mode_param(-1);
+				break;
+				
 			}
 		}
 		if (btn_press_ev[1]!=0)
@@ -509,6 +546,10 @@ void btn_event_release(void)
 				{
 					menu_mode_param=1;
 				}
+				break;
+				case MENU_MODE_PARAM_EDIT:
+				sh_menu=SHOW_MENU_MODE_PARAM_EDIT;
+				edit_mode_param(1);
 				break;
 			}
 		}
