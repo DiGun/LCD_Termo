@@ -7,7 +7,7 @@
 // #define F_CPU  8000000UL
 #include <util/delay.h>
 #include <avr/eeprom.h>
-
+#include <string.h>
 #include "lcdpcf8574.h"
 #include "music.h"
 
@@ -96,7 +96,7 @@ void btn_check(void)
 		}
 		else
 		{
-			if (btn_last_state[f]>=0b00011111)
+			if (btn_last_state[f]>=0b00000011)
 			{
 				if (btn_press[f]==0)
 				{
@@ -382,13 +382,13 @@ void eep_load(void)
 {
 	//	eeprom_write_block(&info, (uint16_t*)eepromAddress, sizeof(info));
 
-	eeprom_read_block(&mode_work_cur, &mode_work[menu_mode_select], sizeof(mode_work_t));
+	eeprom_read_block(&mode_work_cur, &mode_work[menu_mode_select-1], sizeof(mode_work_t));
 
 }
 
 void eep_save(void)
 {
-	eeprom_write_block(&mode_work_cur, &mode_work[menu_mode_select], sizeof(mode_work_t));
+	eeprom_write_block(&mode_work_cur, &mode_work[menu_mode_select-1], sizeof(mode_work_t));
 
 	//	eeprom_read_block(&mode_work_cur, (uint16_t*)mode_work[menu_mode_select], sizeof(mode_work_t));
 
@@ -422,11 +422,13 @@ void edit_mode_param(int8_t dir)
 		}
 		itoa(mode_work_cur.mode,buff,10);
 		lcd_puts(buff);
+		print_blank(5-strlen(buff));
 		break;
 		case 2:
 		mode_work_cur.temp+=dir;
 		itoa(mode_work_cur.temp,buff,10);
 		lcd_puts(buff);
+		print_blank(5-strlen(buff));
 		break;
 		case 3:
 		{
@@ -443,6 +445,7 @@ void edit_mode_param(int8_t dir)
 			}
 			itoa(minut,buff,10);
 			lcd_puts(buff);
+			print_blank(5-strlen(buff));
 			mode_work_cur.sec=minut*60;
 		}
 		break;
@@ -636,7 +639,34 @@ int main(void)
 
 	//lcd go home
 	lcd_home();
+/*
+	char s[5];
+	
+	mode_work_cur.mode=3;
+	mode_work_cur.temp=5;
+	mode_work_cur.sec=44;
+	itoa(mode_work_cur.mode, s, 10);
+	lcd_puts(s);
+	lcd_putc(' ');
+	itoa(mode_work_cur.temp, s, 10);
+	lcd_puts(s);
+	lcd_putc(' ');
+	itoa(mode_work_cur.sec, s, 10);
+	lcd_puts(s);
+	eep_save();
+	eep_load();
+	lcd_gotoxy(0, 1);
+	itoa(mode_work_cur.mode, s, 10);
+	lcd_puts(s);
+	lcd_putc(' ');
+	itoa(mode_work_cur.temp, s, 10);
+	lcd_puts(s);
+	lcd_putc(' ');
+	itoa(mode_work_cur.sec, s, 10);
+	lcd_puts(s);
 
+	while (1);
+*/	
 	uint8_t led = 0;
 	lcd_led(led); //set led
 	lcd_puts_P("metrolog.org.ua");
