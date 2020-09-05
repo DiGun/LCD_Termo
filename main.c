@@ -380,18 +380,12 @@ uint8_t menu_mode_param;
 
 void eep_load(void)
 {
-	//	eeprom_write_block(&info, (uint16_t*)eepromAddress, sizeof(info));
-
 	eeprom_read_block(&mode_work_cur, &mode_work[menu_mode_select-1], sizeof(mode_work_t));
-
 }
 
 void eep_save(void)
 {
 	eeprom_write_block(&mode_work_cur, &mode_work[menu_mode_select-1], sizeof(mode_work_t));
-
-	//	eeprom_read_block(&mode_work_cur, (uint16_t*)mode_work[menu_mode_select], sizeof(mode_work_t));
-
 }
 
 void print_blank(uint8_t c)
@@ -443,14 +437,33 @@ void edit_mode_param(int8_t dir)
 			{
 				minut=1;
 			}
-			itoa(minut,buff,10);
+			uint8_t l;
+			uint8_t h;
+			uint8_t m;
+			h=minut/60;
+			m=minut-h*60;
+			itoa(h,buff,10);
 			lcd_puts(buff);
-			print_blank(5-strlen(buff));
+			l=strlen(buff);
+			lcd_putc(':');
+			l++;
+			itoa(m,buff,10);
+			if (strlen(buff)==1)
+			{
+				lcd_putc('0');
+			}
+			lcd_puts(buff);
+			l++;
+			l++;
+			print_blank(5-l);
 			mode_work_cur.sec=minut*60;
 		}
 		break;
 	}
-	eep_save();
+	if (dir!=0)
+	{
+		eep_save();
+	}
 }
 
 
@@ -473,6 +486,7 @@ void menu(void)
 			lcd_puts_P("Mode:");
 			lcd_gotoxy(0, 1);
 			lcd_puts_P("Select");
+			print_blank(4);
 		break;
 		case SHOW_MENU_MODE_SELECT:
 			sh_menu=SHOW_NONE;
