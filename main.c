@@ -14,7 +14,7 @@
 
 
 /* mode
-0	-	off
+0	-	off/end
 1	-	on heater and wait for needed temp
 2	-	hold temp needed time
 3	-	off heater and wait for time
@@ -33,8 +33,9 @@ typedef struct mode_work_st {
 
 
 #define MODE_SEL_MAX 4
+#define MODE_SEL_STEPS 4
 
-mode_work_t EEMEM mode_work[MODE_SEL_MAX];
+mode_work_t EEMEM mode_work[MODE_SEL_MAX][MODE_SEL_STEPS];
 
 mode_work_t mode_work_cur;
 
@@ -384,24 +385,27 @@ void print_bin(uint8_t b)
 
 uint8_t menu_mode;
 uint8_t menu_mode_select;
+uint8_t menu_mode_select_step;
 uint8_t menu_mode_param;
 
 #define MENU_MODE_PARAM_EDIT 3
 #define MENU_MODE_PARAM 2
+#define MENU_MODE_STEP 4
 #define MENU_MODE_SEL 1
 
 
+#define MENU_MODE_STEP_MAX	MODE_SEL_STEPS
 #define MENU_MODE_SEL_MAX	MODE_SEL_MAX
 #define MENU_MODE_SEL_MAXS	(MENU_MODE_SEL_MAX+1)
 
 void eep_load(void)
 {
-	eeprom_read_block(&mode_work_cur, &mode_work[menu_mode_select-1], sizeof(mode_work_t));
+	eeprom_read_block(&mode_work_cur, &mode_work[menu_mode_select-1][menu_mode_select_step-1], sizeof(mode_work_t));
 }
 
 void eep_save(void)
 {
-	eeprom_write_block(&mode_work_cur, &mode_work[menu_mode_select-1], sizeof(mode_work_t));
+	eeprom_update_block(&mode_work_cur, &mode_work[menu_mode_select-1][menu_mode_select_step-1], sizeof(mode_work_t));
 }
 
 void print_blank(uint8_t c)
@@ -476,10 +480,12 @@ void edit_mode_param(int8_t dir)
 		}
 		break;
 	}
+	/*
 	if (dir!=0)
 	{
 		eep_save();
 	}
+	*/
 }
 
 
@@ -487,9 +493,16 @@ uint8_t sh_menu;
 #define SHOW_NONE 0
 #define SHOW_MENU_MODE 1
 #define SHOW_MENU_MODE_SELECT 2
-#define SHOW_MENU_MODE_PARAM 3
-#define SHOW_MENU_MODE_PARAM_EDIT 4
-#define SHOW_MENU_MODE_PARAM_EDIT_VALUE 5
+#define SHOW_MENU_MODE_STEP 3
+#define SHOW_MENU_MODE_PARAM 4
+#define SHOW_MENU_MODE_PARAM_EDIT 5
+#define SHOW_MENU_MODE_PARAM_EDIT_VALUE 6
+
+void clear_screen(void)
+{
+	lcd_clrscr();
+	lcd_gotoxy(0, 0);	
+}
 
 
 void menu(void)
@@ -517,28 +530,34 @@ void menu(void)
 				print_blank(7);
 			}
 		break;
+		case SHOW_MENU_MODE_STEP:
+			sh_menu=SHOW_NONE;
+			clear_screen();
+			lcd_putc('M');
+			lcd_putc(':');
+			lcd_putc('0'+menu_mode_select);
+			lcd_putc(' ');
+			lcd_puts_P("Step:");
+			lcd_putc('0'+menu_mode_select_step);
+		break;
+
 		case SHOW_MENU_MODE_PARAM:
 			sh_menu=SHOW_NONE;
 			lcd_gotoxy(0, 1);
-/*			
-			mode_work_cur.mode=11;
-			mode_work_cur.temp=22;
-			mode_work_cur.sec=33;
-*/
 			eep_load();			
-				switch(menu_mode_param)
-				{
-					case 1:
+			switch(menu_mode_param)
+			{
+				case 1:
 					lcd_puts_P("Type:");
-					break;
-					case 2:
+				break;
+				case 2:
 					lcd_puts_P("Temp:");
-					break;
-					case 3:
+				break;
+				case 3:
 					lcd_puts_P("Time:");
-					break;
-				}
-				edit_mode_param(0);
+				break;
+			}
+			edit_mode_param(0);
 		break;
 		case SHOW_MENU_MODE_PARAM_EDIT:
 			sh_menu=SHOW_NONE;
@@ -557,26 +576,33 @@ void btn_event_release(void)
 			switch(menu_mode)
 			{
 				case MENU_MODE_SEL:
-				sh_menu=SHOW_MENU_MODE_SELECT;
-				menu_mode_select--;
-				if (menu_mode_select==0)
-				{
-					menu_mode_select=MENU_MODE_SEL_MAXS;
-				}
+					sh_menu=SHOW_MENU_MODE_SELECT;
+					menu_mode_select--;
+					if (menu_mode_select==0)
+					{
+						menu_mode_select=MENU_MODE_SEL_MAXS;
+					}
+				break;
+				case MENU_MODE_STEP:
+					sh_menu=SHOW_MENU_MODE_STEP;
+					menu_mode_select_step--;
+					if (menu_mode_select_step==0)
+					{
+						menu_mode_select_step=MENU_MODE_STEP_MAX;
+					}
 				break;
 				case MENU_MODE_PARAM:
-				sh_menu=SHOW_MENU_MODE_PARAM;
-				menu_mode_param--;
-				if (menu_mode_param==0)
-				{
-					menu_mode_param=MODE_PARAM_CNT;
-				}
+					sh_menu=SHOW_MENU_MODE_PARAM;
+					menu_mode_param--;
+					if (menu_mode_param==0)
+					{
+						menu_mode_param=MODE_PARAM_CNT;
+					}
 				break;
 				case MENU_MODE_PARAM_EDIT:
-				sh_menu=SHOW_MENU_MODE_PARAM_EDIT;
-				edit_mode_param(-1);
+					sh_menu=SHOW_MENU_MODE_PARAM_EDIT;
+					edit_mode_param(-1);
 				break;
-				
 			}
 		}
 		if (btn_press_ev[1]!=0)
@@ -586,24 +612,32 @@ void btn_event_release(void)
 			switch(menu_mode)
 			{
 				case MENU_MODE_SEL:
-				sh_menu=SHOW_MENU_MODE_SELECT;
-				menu_mode_select++;
-				if (menu_mode_select>(MENU_MODE_SEL_MAXS))
-				{
-					menu_mode_select=1;
-				}
+					sh_menu=SHOW_MENU_MODE_SELECT;
+					menu_mode_select++;
+					if (menu_mode_select>(MENU_MODE_SEL_MAXS))
+					{
+						menu_mode_select=1;
+					}
+				break;
+				case MENU_MODE_STEP:
+					sh_menu=SHOW_MENU_MODE_STEP;
+					menu_mode_select_step++;
+					if (menu_mode_select_step>(MENU_MODE_STEP_MAX))
+					{
+						menu_mode_select_step=1;
+					}
 				break;
 				case MENU_MODE_PARAM:
-				sh_menu=SHOW_MENU_MODE_PARAM;
-				menu_mode_param++;
-				if (menu_mode_param>(MODE_PARAM_CNT))
-				{
-					menu_mode_param=1;
-				}
+					sh_menu=SHOW_MENU_MODE_PARAM;
+					menu_mode_param++;
+					if (menu_mode_param>(MODE_PARAM_CNT))
+					{
+						menu_mode_param=1;
+					}
 				break;
 				case MENU_MODE_PARAM_EDIT:
-				sh_menu=SHOW_MENU_MODE_PARAM_EDIT;
-				edit_mode_param(1);
+					sh_menu=SHOW_MENU_MODE_PARAM_EDIT;
+					edit_mode_param(1);
 				break;
 			}
 		}
@@ -613,13 +647,18 @@ void btn_event_release(void)
 			btn_press_ev[2]=0;
 			switch(menu_mode)
 			{
-				case MENU_MODE_PARAM:
+				case MENU_MODE_STEP:
 					sh_menu=SHOW_MENU_MODE;
 					menu_mode=MENU_MODE_SEL;
-					break;
+				break;
+				case MENU_MODE_PARAM:
+					sh_menu=SHOW_MENU_MODE_STEP;
+					menu_mode=MENU_MODE_STEP;
+				break;
 				case MENU_MODE_PARAM_EDIT:
 					sh_menu=SHOW_MENU_MODE_PARAM;
 					menu_mode=MENU_MODE_PARAM;
+					eep_save();
 				break;
 
 			}
@@ -631,6 +670,11 @@ void btn_event_release(void)
 			switch(menu_mode)
 			{
 				case MENU_MODE_SEL:
+					sh_menu=SHOW_MENU_MODE_STEP;
+					menu_mode=MENU_MODE_STEP;
+					menu_mode_select_step=1;
+				break;
+				case MENU_MODE_STEP:
 					sh_menu=SHOW_MENU_MODE_PARAM;
 					menu_mode=MENU_MODE_PARAM;
 					menu_mode_param=1;
@@ -639,12 +683,8 @@ void btn_event_release(void)
 					sh_menu=SHOW_MENU_MODE_PARAM_EDIT;
 					menu_mode=MENU_MODE_PARAM_EDIT;
 				break;
-
 			}
-
-			
 		}
-	
 }
 
 int main(void)
