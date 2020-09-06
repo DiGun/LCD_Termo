@@ -65,8 +65,12 @@ void btn_init(void)
 #define BTN_CNT 4
 
 uint8_t btn_last_state[BTN_CNT];
+uint8_t btn_press_long[BTN_CNT];
 uint8_t btn_press_ev[BTN_CNT];
 uint8_t btn_press[BTN_CNT];
+
+#define BTN_LONG_PRES_WAIT 40
+#define BTN_LONG_PRES_REPEAT 4
 
 void btn_check(void)
 {
@@ -78,14 +82,16 @@ void btn_check(void)
 	
 	for (uint8_t f=0; f<BTN_CNT;f++)
 	{
-		btn_last_state[f]<<=1;
 		if (btn[f]==0)
 		{
-			btn_last_state[f]|=1;
+//			btn_last_state[f]|=1;
+			btn_last_state[f]=0b00000111;
 		}
 		else
 		{
-			btn_last_state[f]&=~1;
+			btn_last_state[f]>>=1;
+//			btn_last_state[f]&=~1;
+			btn_last_state[f]&=~(0b10000000);
 		}
 		if (btn_last_state[f]==0)
 		{
@@ -96,12 +102,22 @@ void btn_check(void)
 		}
 		else
 		{
-			if (btn_last_state[f]>=0b00000011)
+			if (btn_last_state[f]>=0b00000111)
 			{
 				if (btn_press[f]==0)
 				{
 					btn_press_ev[f]=1;
 					btn_press[f]=1;
+					btn_press_long[f]=0;
+				}
+				else
+				{
+					btn_press_long[f]++;
+					if (btn_press_long[f]>=BTN_LONG_PRES_WAIT)
+					{
+						btn_press_long[f]=BTN_LONG_PRES_WAIT-BTN_LONG_PRES_REPEAT;
+						btn_press_ev[f]=1;
+					}
 				}
 			}
 		}
