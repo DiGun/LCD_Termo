@@ -69,6 +69,14 @@ uint8_t btn_last_state[BTN_CNT];
 uint8_t btn_press_long[BTN_CNT];
 uint8_t btn_press_ev[BTN_CNT];
 uint8_t btn_press[BTN_CNT];
+uint8_t	btn_repeat_lr;
+uint8_t	btn_repeat_ud;
+
+#define btn_left	0
+#define btn_right	1
+#define btn_up		2
+#define btn_down	3
+
 
 #define BTN_LONG_PRES_WAIT 40
 #define BTN_LONG_PRES_REPEAT 4
@@ -113,11 +121,14 @@ void btn_check(void)
 				}
 				else
 				{
-					btn_press_long[f]++;
-					if (btn_press_long[f]>=BTN_LONG_PRES_WAIT)
+					if (((btn_repeat_lr!=0)&&((f==btn_left)||(f==btn_right)))||((btn_repeat_ud!=0)&&((f==btn_up)||(f==btn_down))))
 					{
-						btn_press_long[f]=BTN_LONG_PRES_WAIT-BTN_LONG_PRES_REPEAT;
-						btn_press_ev[f]=1;
+						btn_press_long[f]++;
+						if (btn_press_long[f]>=BTN_LONG_PRES_WAIT)
+						{
+							btn_press_long[f]=BTN_LONG_PRES_WAIT-BTN_LONG_PRES_REPEAT;
+							btn_press_ev[f]=1;
+						}
 					}
 				}
 			}
@@ -567,12 +578,13 @@ void menu(void)
 	}
 }
 
+
 void btn_event_release(void)
 {
-		if (btn_press_ev[0]!=0)
+		if (btn_press_ev[btn_left]!=0)
 		{
 			// left
-			btn_press_ev[0]=0;
+			btn_press_ev[btn_left]=0;
 			switch(menu_mode)
 			{
 				case MENU_MODE_SEL:
@@ -605,10 +617,10 @@ void btn_event_release(void)
 				break;
 			}
 		}
-		if (btn_press_ev[1]!=0)
+		if (btn_press_ev[btn_right]!=0)
 		{
 			// right
-			btn_press_ev[1]=0;
+			btn_press_ev[btn_right]=0;
 			switch(menu_mode)
 			{
 				case MENU_MODE_SEL:
@@ -641,10 +653,10 @@ void btn_event_release(void)
 				break;
 			}
 		}
-		if (btn_press_ev[2]!=0)
+		if (btn_press_ev[btn_up]!=0)
 		{
 			// up
-			btn_press_ev[2]=0;
+			btn_press_ev[btn_up]=0;
 			switch(menu_mode)
 			{
 				case MENU_MODE_STEP:
@@ -659,14 +671,15 @@ void btn_event_release(void)
 					sh_menu=SHOW_MENU_MODE_PARAM;
 					menu_mode=MENU_MODE_PARAM;
 					eep_save();
+					btn_repeat_lr=0;
 				break;
 
 			}
 		}
-		if (btn_press_ev[3]!=0)
+		if (btn_press_ev[btn_down]!=0)
 		{
 			// down
-			btn_press_ev[3]=0;
+			btn_press_ev[btn_down]=0;
 			switch(menu_mode)
 			{
 				case MENU_MODE_SEL:
@@ -680,6 +693,7 @@ void btn_event_release(void)
 					menu_mode_param=1;
 				break;
 				case MENU_MODE_PARAM:
+					btn_repeat_lr=1;
 					sh_menu=SHOW_MENU_MODE_PARAM_EDIT;
 					menu_mode=MENU_MODE_PARAM_EDIT;
 				break;
@@ -698,6 +712,8 @@ int main(void)
 	seconds=0;
 	mus_init();
 	btn_init();
+	btn_repeat_lr=0;
+	btn_repeat_ud=0;
 	sh_menu=SHOW_MENU_MODE;
 	menu_mode=MENU_MODE_SEL;
 	menu_mode_select=1;
