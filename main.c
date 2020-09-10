@@ -398,16 +398,21 @@ uint8_t menu_mode;
 uint8_t menu_mode_select;
 uint8_t menu_mode_select_step;
 uint8_t menu_mode_param;
+uint8_t menu_mode_conf;
 
 #define MENU_MODE_PARAM_EDIT 3
 #define MENU_MODE_PARAM 2
 #define MENU_MODE_STEP 4
 #define MENU_MODE_SEL 1
+#define MENU_MODE_CONF	5
 
 
 #define MENU_MODE_STEP_MAX	MODE_SEL_STEPS
 #define MENU_MODE_SEL_MAX	MODE_SEL_MAX
 #define MENU_MODE_SEL_MAXS	(MENU_MODE_SEL_MAX+1)
+
+#define MODE_CONF_MAX 4
+
 
 void eep_load(void)
 {
@@ -491,12 +496,6 @@ void edit_mode_param(int8_t dir)
 		}
 		break;
 	}
-	/*
-	if (dir!=0)
-	{
-		eep_save();
-	}
-	*/
 }
 
 
@@ -508,6 +507,7 @@ uint8_t sh_menu;
 #define SHOW_MENU_MODE_PARAM 4
 #define SHOW_MENU_MODE_PARAM_EDIT 5
 #define SHOW_MENU_MODE_PARAM_EDIT_VALUE 6
+#define SHOW_MENU_CONF 7
 
 void clear_screen(void)
 {
@@ -518,63 +518,87 @@ void clear_screen(void)
 
 void menu(void)
 {
-	switch (sh_menu)
+	if (sh_menu!=SHOW_NONE)
 	{
-		case SHOW_MENU_MODE:
-			sh_menu=SHOW_MENU_MODE_SELECT;
-			lcd_gotoxy(0, 0);
-			lcd_puts_P("Mode:");
-			lcd_gotoxy(0, 1);
-			lcd_puts_P("Select");
-			print_blank(4);
-		break;
-		case SHOW_MENU_MODE_SELECT:
-			sh_menu=SHOW_NONE;
-			lcd_gotoxy(5, 0);
-			if (menu_mode_select==MENU_MODE_SEL_MAXS)
-			{
-				lcd_puts_P("settings");
-			}
-			else
-			{
+		switch (sh_menu)
+		{
+			case SHOW_MENU_MODE:
+				sh_menu=SHOW_MENU_MODE_SELECT;
+				lcd_gotoxy(0, 0);
+				lcd_puts_P("Mode:");
+				lcd_gotoxy(0, 1);
+				lcd_puts_P("Select");
+				print_blank(4);
+			break;
+			case SHOW_MENU_MODE_SELECT:
+				sh_menu=SHOW_NONE;
+				lcd_gotoxy(5, 0);
+				if (menu_mode_select==MENU_MODE_SEL_MAXS)
+				{
+					lcd_puts_P("settings");
+				}
+				else
+				{
+					lcd_putc('0'+menu_mode_select);
+					print_blank(7);
+				}
+			break;
+			case SHOW_MENU_MODE_STEP:
+				sh_menu=SHOW_NONE;
+				clear_screen();
+				lcd_putc('M');
+				lcd_putc(':');
 				lcd_putc('0'+menu_mode_select);
-				print_blank(7);
-			}
-		break;
-		case SHOW_MENU_MODE_STEP:
-			sh_menu=SHOW_NONE;
-			clear_screen();
-			lcd_putc('M');
-			lcd_putc(':');
-			lcd_putc('0'+menu_mode_select);
-			lcd_putc(' ');
-			lcd_puts_P("Step:");
-			lcd_putc('0'+menu_mode_select_step);
-		break;
+				lcd_putc(' ');
+				lcd_puts_P("Step:");
+				lcd_putc('0'+menu_mode_select_step);
+			break;
 
-		case SHOW_MENU_MODE_PARAM:
-			sh_menu=SHOW_NONE;
-			lcd_gotoxy(0, 1);
-			eep_load();			
-			switch(menu_mode_param)
-			{
-				case 1:
-					lcd_puts_P("Type:");
-				break;
-				case 2:
-					lcd_puts_P("Temp:");
-				break;
-				case 3:
-					lcd_puts_P("Time:");
-				break;
-			}
-			edit_mode_param(0);
-		break;
-		case SHOW_MENU_MODE_PARAM_EDIT:
-			sh_menu=SHOW_NONE;
-			lcd_gotoxy(4, 1);
-			lcd_putc('>');
-		break;
+			case SHOW_MENU_MODE_PARAM:
+				sh_menu=SHOW_NONE;
+				lcd_gotoxy(0, 1);
+				eep_load();			
+				switch(menu_mode_param)
+				{
+					case 1:
+						lcd_puts_P("Type:");
+					break;
+					case 2:
+						lcd_puts_P("Temp:");
+					break;
+					case 3:
+						lcd_puts_P("Time:");
+					break;
+				}
+				edit_mode_param(0);
+			break;
+			case SHOW_MENU_MODE_PARAM_EDIT:
+				sh_menu=SHOW_NONE;
+				lcd_gotoxy(4, 1);
+				lcd_putc('>');
+			break;
+			case SHOW_MENU_CONF:
+				sh_menu=SHOW_NONE;
+				lcd_gotoxy(0, 1);
+				switch (menu_mode_conf)
+				{
+					case 1:
+						lcd_puts_P("Sound:");
+					break;
+					case 2:
+						lcd_puts_P("Time-+:");
+					break;
+					case 3:
+						lcd_puts_P("Delta+:");
+					break;
+					case 4:
+						lcd_puts_P("Delta-:");
+					break;
+
+				}
+			break;
+			
+		}
 	}
 }
 
@@ -615,6 +639,15 @@ void btn_event_release(void)
 					sh_menu=SHOW_MENU_MODE_PARAM_EDIT;
 					edit_mode_param(-1);
 				break;
+				case MENU_MODE_CONF:
+					sh_menu=SHOW_MENU_CONF;
+					menu_mode_conf--;
+					if (menu_mode_conf==0)
+					{
+						menu_mode_conf=MODE_CONF_MAX;
+					}
+				break;
+				
 			}
 		}
 		if (btn_press_ev[btn_right]!=0)
@@ -651,6 +684,14 @@ void btn_event_release(void)
 					sh_menu=SHOW_MENU_MODE_PARAM_EDIT;
 					edit_mode_param(1);
 				break;
+				case MENU_MODE_CONF:
+					sh_menu=SHOW_MENU_CONF;
+					menu_mode_conf++;
+					if (menu_mode_conf>(MODE_CONF_MAX))
+					{
+						menu_mode_conf=1;
+					}
+				break;
 			}
 		}
 		if (btn_press_ev[btn_up]!=0)
@@ -660,6 +701,7 @@ void btn_event_release(void)
 			switch(menu_mode)
 			{
 				case MENU_MODE_STEP:
+				case MENU_MODE_CONF:
 					sh_menu=SHOW_MENU_MODE;
 					menu_mode=MENU_MODE_SEL;
 				break;
@@ -673,7 +715,6 @@ void btn_event_release(void)
 					eep_save();
 					btn_repeat_lr=0;
 				break;
-
 			}
 		}
 		if (btn_press_ev[btn_down]!=0)
@@ -683,9 +724,18 @@ void btn_event_release(void)
 			switch(menu_mode)
 			{
 				case MENU_MODE_SEL:
-					sh_menu=SHOW_MENU_MODE_STEP;
-					menu_mode=MENU_MODE_STEP;
-					menu_mode_select_step=1;
+					if (menu_mode_select==MENU_MODE_SEL_MAXS)
+					{
+						sh_menu=SHOW_MENU_CONF;
+						menu_mode=MENU_MODE_CONF;
+						menu_mode_conf=1;
+					}
+					else
+					{
+						sh_menu=SHOW_MENU_MODE_STEP;
+						menu_mode=MENU_MODE_STEP;
+						menu_mode_select_step=1;
+					}
 				break;
 				case MENU_MODE_STEP:
 					sh_menu=SHOW_MENU_MODE_PARAM;
@@ -806,85 +856,6 @@ int main(void)
 		quick_fn();
 		btn_event_release();
 		menu();
-/*		
-		if (btn_press_ev[0]!=0)
-		{
-			// left
-			lcd_gotoxy(f, 0);
-			lcd_putc(0x7F);
-			print_bin(BTN_IN);
-			btn_press_ev[0]=0;	
-			f++;
-		}
-		if (btn_press_ev[1]!=0)
-		{
-			// right
-			lcd_gotoxy(f, 0);
-			lcd_putc(0x7E);
-			print_bin(BTN_IN);
-			btn_press_ev[1]=0;
-			f++;
-		}
-		if (btn_press_ev[2]!=0)
-		{
-			// up
-			lcd_gotoxy(f, 0);
-			lcd_putc(0x01);
-			print_bin(BTN_IN);
-			btn_press_ev[2]=0;
-			f++;
-		}
-		if (btn_press_ev[3]!=0)
-		{
-			// down
-			lcd_gotoxy(f, 0);
-			lcd_putc(0x00);
-			print_bin(BTN_IN);
-			btn_press_ev[3]=0;
-			f++;
-		}
-		
-*/		
-/*
-		pause(4);
-//		_delay_ms(4000);
-		
-		lcd_clrscr();
-		if (f==16)
-		{
-			f=0;
-		}
-		if (f<10)
-		{
-			lcd_putc('0'+f);
-		} 
-		else
-		{
-			lcd_putc('A'+f-10);
-		}
-		pause(2);
-		
-//		_delay_ms(2000);		
-		lcd_home();
-		for (char c='0';c<='9';c++)
-		{
-			lcd_putc(c);
-		}
-		for (char c='A';c<='F';c++)
-		{
-			lcd_putc(c);
-		}
-		lcd_gotoxy(0, 1);
-		for (char c=0;c<=15;c++)
-		{
-			lcd_putc(c+f*16);
-		}
-		
-//		lcd_led(led); //set led
-//		led = !led; //invert led for next loop
-		f++;
-		//test loop
-		*/
 	}
 }
 
