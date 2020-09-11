@@ -23,6 +23,15 @@
 
 #define  MODE_TYPE_MAX 4
 
+typedef struct conf_st {
+	uint8_t sound;
+	uint8_t d_up;
+	uint8_t d_down;
+	uint8_t time;
+} conf_t;
+
+conf_t conf_cur;
+
 typedef struct mode_work_st {
 	uint8_t mode;
 	uint8_t temp;
@@ -405,7 +414,7 @@ uint8_t menu_mode_conf;
 #define MENU_MODE_STEP 4
 #define MENU_MODE_SEL 1
 #define MENU_MODE_CONF	5
-
+#define MENU_MODE_CONF_EDIT	6
 
 #define MENU_MODE_STEP_MAX	MODE_SEL_STEPS
 #define MENU_MODE_SEL_MAX	MODE_SEL_MAX
@@ -432,12 +441,17 @@ void print_blank(uint8_t c)
 	}
 }
 
-
+void print_param(uint8_t n)
+{
+	char buff[5];
+	itoa(n,buff,10);
+	lcd_puts(buff);
+	print_blank(5-strlen(buff));
+}
 
 void edit_mode_param(int8_t dir)
 {
 	lcd_gotoxy(5, 1);
-	char buff[4];
 	switch(menu_mode_param)
 	{
 		case 1:
@@ -450,19 +464,16 @@ void edit_mode_param(int8_t dir)
 		{
 			mode_work_cur.mode=0;
 		}
-		itoa(mode_work_cur.mode,buff,10);
-		lcd_puts(buff);
-		print_blank(5-strlen(buff));
+		print_param(mode_work_cur.mode);
 		break;
 		case 2:
 		mode_work_cur.temp+=dir;
-		itoa(mode_work_cur.temp,buff,10);
-		lcd_puts(buff);
-		print_blank(5-strlen(buff));
+		print_param(mode_work_cur.temp);
 		break;
 		case 3:
 		{
 			uint16_t minut;
+			char buff[4];
 			minut=mode_work_cur.sec/60;
 			minut+=dir;
 			if (minut>1024)
@@ -498,6 +509,48 @@ void edit_mode_param(int8_t dir)
 	}
 }
 
+void edit_conf_param(int8_t dir)
+{
+	lcd_gotoxy(7, 1);
+	switch (menu_mode_conf)
+	{
+		case 1:
+			conf_cur.sound+=dir;
+			if (conf_cur.sound>1)
+			{
+				conf_cur.sound=0;
+			}
+			else
+			{
+				if (conf_cur.sound==255)
+				{
+					conf_cur.sound=1;
+				}
+			}
+			if (conf_cur.sound!=0)
+			{
+				lcd_puts_P("On");
+			}
+			else
+			{
+				lcd_puts_P("Off");
+			}
+		break;
+		case 2:
+			conf_cur.time+=dir;
+			print_param(conf_cur.time);
+		break;
+		case 3:
+			conf_cur.d_up+=dir;
+			print_param(conf_cur.d_up);
+		break;
+		case 4:
+			conf_cur.d_down+=dir;
+			print_param(conf_cur.d_down);
+		break;
+	}
+}
+
 
 uint8_t sh_menu;
 #define SHOW_NONE 0
@@ -508,6 +561,7 @@ uint8_t sh_menu;
 #define SHOW_MENU_MODE_PARAM_EDIT 5
 #define SHOW_MENU_MODE_PARAM_EDIT_VALUE 6
 #define SHOW_MENU_CONF 7
+#define SHOW_MENU_CONF_EDIT	8
 
 void clear_screen(void)
 {
@@ -583,7 +637,7 @@ void menu(void)
 				switch (menu_mode_conf)
 				{
 					case 1:
-						lcd_puts_P("Sound:");
+						lcd_puts_P("Sound :");
 					break;
 					case 2:
 						lcd_puts_P("Time-+:");
@@ -594,10 +648,14 @@ void menu(void)
 					case 4:
 						lcd_puts_P("Delta-:");
 					break;
-
 				}
+				edit_conf_param(0);
 			break;
-			
+			case SHOW_MENU_CONF_EDIT:
+				sh_menu=SHOW_NONE;
+				lcd_gotoxy(6, 1);
+				lcd_putc('>');
+			break;		
 		}
 	}
 }
@@ -715,6 +773,13 @@ void btn_event_release(void)
 					eep_save();
 					btn_repeat_lr=0;
 				break;
+				case MENU_MODE_CONF_EDIT:
+					sh_menu=SHOW_MENU_CONF;
+					menu_mode=MENU_MODE_CONF;
+					eep_save();
+					btn_repeat_lr=0;
+				break;
+				
 			}
 		}
 		if (btn_press_ev[btn_down]!=0)
@@ -746,6 +811,11 @@ void btn_event_release(void)
 					btn_repeat_lr=1;
 					sh_menu=SHOW_MENU_MODE_PARAM_EDIT;
 					menu_mode=MENU_MODE_PARAM_EDIT;
+				break;
+				case MENU_MODE_CONF:
+					btn_repeat_lr=1;
+					sh_menu=SHOW_MENU_CONF_EDIT;
+					menu_mode=MENU_MODE_CONF_EDIT;
 				break;
 			}
 		}
