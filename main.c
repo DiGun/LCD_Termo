@@ -31,6 +31,7 @@ typedef struct conf_st {
 } conf_t;
 
 conf_t conf_cur;
+conf_t EEMEM conf_e;
 
 typedef struct mode_work_st {
 	uint8_t mode;
@@ -338,47 +339,6 @@ void pause(uint8_t s)
 	}
 
 }
-/*
-void test(const note_t* ntp)
-{
-		uint8_t i;
-		note_t nt;
-		note_t *ntc;
-		lcd_clrscr();
-		lcd_home();
-		for(i=0; i<MEL2; i++)
-		{
-			char buf[10];
-			ntc=&melod2[i];
-			
-			itoa(ntc->tone, buf, 10);
-			lcd_gotoxy(0, 0);
-			lcd_puts(buf);
-
-			itoa(ntc->leng, buf, 10);
-			lcd_gotoxy(8, 0);
-			lcd_puts(buf);
-			
-			memcpy_P(&nt,&ntp[i],sizeof(nt));
-			
-			itoa(nt.tone, buf, 10);
-			lcd_gotoxy(0, 1);
-			lcd_puts(buf);
-
-			itoa(nt.leng, buf, 10);
-			lcd_gotoxy(8, 1);
-			lcd_puts(buf);
-			
-			
-			
-			_delay_ms(2000);
-			lcd_clrscr();
-
-		}
-
-	
-}
-*/
 
 void print_bin(uint8_t b)
 {
@@ -423,15 +383,27 @@ uint8_t menu_mode_conf;
 #define MODE_CONF_MAX 4
 
 
-void eep_load(void)
+inline void eep_load(void)
 {
 	eeprom_read_block(&mode_work_cur, &mode_work[menu_mode_select-1][menu_mode_select_step-1], sizeof(mode_work_t));
 }
 
-void eep_save(void)
+inline void eep_save(void)
 {
 	eeprom_update_block(&mode_work_cur, &mode_work[menu_mode_select-1][menu_mode_select_step-1], sizeof(mode_work_t));
 }
+
+
+inline void eep_load_conf(void)
+{
+	eeprom_read_block(&conf_cur, &conf_e, sizeof(conf_t));
+}
+
+inline void eep_save_conf(void)
+{
+	eeprom_update_block(&conf_cur, &conf_e, sizeof(conf_t));
+}
+
 
 void print_blank(uint8_t c)
 {
@@ -774,7 +746,7 @@ void btn_event_release(void)
 				case MENU_MODE_CONF_EDIT:
 					sh_menu=SHOW_MENU_CONF;
 					menu_mode=MENU_MODE_CONF;
-					eep_save();
+					eep_save_conf();
 					btn_repeat_lr=0;
 				break;
 				
@@ -879,45 +851,15 @@ int main(void)
 	lcd_gotoxy(0, 1);
 	lcd_putc(0);
 	lcd_putc(1);
-	
+	eep_load_conf();
 	_delay_ms(1000);
-/*
-	while (1)
-	{
-		test(melod2_p);
-	}
-*/	
-/*
-		int i = 0;
-		//		int line = 0;
-		lcd_gotoxy(10, 1);
-		lcd_puts("i= ");
-		for(i=0; i<=99; i++) 
-		{
-			char buf[10];
-			itoa(i, buf, 10);
-			if (buf[1]==0)
-			{
-				buf[1]=' ';
-				buf[2]=0;
-			}
-			//			itoa(i, buf, 10);
-			//			lcd_gotoxy(4, line);
-			lcd_gotoxy(13, 1);
-			lcd_puts(buf);
-			//			line++;
-			//			line %= 2;
-//			_delay_ms(10);
-		}
-*/		
+
 //	uint8_t f=255;
 //	mus_play_p(melod2_p, MEL2,1);	
 //	play_melody=1;
 
-
-			lcd_clrscr();
-			lcd_gotoxy(0, 0);
-//			print_blank(16);
+	lcd_clrscr();
+	lcd_gotoxy(0, 0);
 
 	while(1) 
 	{
