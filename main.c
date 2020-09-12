@@ -515,17 +515,9 @@ void edit_conf_param(int8_t dir)
 	switch (menu_mode_conf)
 	{
 		case 1:
-			conf_cur.sound+=dir;
-			if (conf_cur.sound>1)
+			if (dir!=0)
 			{
-				conf_cur.sound=0;
-			}
-			else
-			{
-				if (conf_cur.sound==255)
-				{
-					conf_cur.sound=1;
-				}
+				conf_cur.sound=!conf_cur.sound;
 			}
 			if (conf_cur.sound!=0)
 			{
@@ -549,6 +541,7 @@ void edit_conf_param(int8_t dir)
 			print_param(conf_cur.d_down);
 		break;
 	}
+	print_blank(2);
 }
 
 
@@ -705,7 +698,9 @@ void btn_event_release(void)
 						menu_mode_conf=MODE_CONF_MAX;
 					}
 				break;
-				
+				case MENU_MODE_CONF_EDIT:
+					edit_conf_param(-1);
+				break;
 			}
 		}
 		if (btn_press_ev[btn_right]!=0)
@@ -749,6 +744,9 @@ void btn_event_release(void)
 					{
 						menu_mode_conf=1;
 					}
+				break;
+				case MENU_MODE_CONF_EDIT:
+					edit_conf_param(1);
 				break;
 			}
 		}
