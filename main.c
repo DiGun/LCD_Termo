@@ -375,6 +375,7 @@ uint8_t menu_mode_conf;
 #define MENU_MODE_SEL 1
 #define MENU_MODE_CONF	5
 #define MENU_MODE_CONF_EDIT	6
+#define MENU_MODE_START 7
 
 #define MENU_MODE_STEP_MAX	MODE_SEL_STEPS
 #define MENU_MODE_SEL_MAX	MODE_SEL_MAX
@@ -421,6 +422,67 @@ void print_param(uint8_t n)
 	print_blank(5-strlen(buff));
 }
 
+uint8_t print_time(uint8_t dir)
+{
+			uint16_t minut;
+			char buff[4];
+			minut=mode_work_cur.sec/60;
+			uint8_t s=0;
+			if (dir==0)
+			{
+				s=mode_work_cur.sec%60;
+			}
+			else
+			{
+				minut+=dir;
+			}
+			if (minut>540)
+			{
+				minut=540;
+			}
+			if (minut==0)
+			{
+				minut=1;
+			}
+			uint8_t l;
+			uint8_t h;
+			uint8_t m;
+			h=minut/60;
+			m=minut%60;
+//			m=minut-h*60;
+			itoa(h,buff,10);
+			lcd_puts(buff);
+			l=1;
+			lcd_putc(':');
+			l++;
+			itoa(m,buff,10);
+			if (strlen(buff)==1)
+			{
+				lcd_putc('0');
+			}
+			lcd_puts(buff);
+			l++;
+			l++;
+			if (menu_mode==MENU_MODE_START)
+			{
+				lcd_putc(':');
+				l++;
+				itoa(s,buff,10);
+				if (strlen(buff)==1)
+				{
+					lcd_putc('0');
+				}
+				lcd_puts(buff);
+				l++;
+				l++;				
+			}
+			if (dir!=0)
+			{
+				mode_work_cur.sec=minut*60;
+			}
+			return l;
+}
+
 void edit_mode_param(int8_t dir)
 {
 	lcd_gotoxy(5, 1);
@@ -444,38 +506,10 @@ void edit_mode_param(int8_t dir)
 		break;
 		case 3:
 		{
-			uint16_t minut;
-			char buff[4];
-			minut=mode_work_cur.sec/60;
-			minut+=dir;
-			if (minut>1024)
-			{
-			minut=1024;
-			}
-			if (minut==0)
-			{
-				minut=1;
-			}
-			uint8_t l;
-			uint8_t h;
-			uint8_t m;
-			h=minut/60;
-			m=minut-h*60;
-			itoa(h,buff,10);
-			lcd_puts(buff);
-			l=strlen(buff);
-			lcd_putc(':');
-			l++;
-			itoa(m,buff,10);
-			if (strlen(buff)==1)
-			{
-				lcd_putc('0');
-			}
-			lcd_puts(buff);
-			l++;
-			l++;
-			print_blank(5-l);
-			mode_work_cur.sec=minut*60;
+			print_time(dir);
+//			uint8_t l;
+//			l=print_time(dir);
+//			print_blank(5-l);
 		}
 		break;
 	}
@@ -571,6 +605,12 @@ void menu(void)
 				lcd_putc(' ');
 				lcd_puts_P("Step:");
 				lcd_putc('0'+menu_mode_select_step);
+				if (menu_mode==MENU_MODE_START)
+				{
+					lcd_gotoxy(0, 1);
+					lcd_puts_P("Work:");
+					print_time(0);
+				}
 			break;
 
 			case SHOW_MENU_MODE_PARAM:
@@ -728,6 +768,11 @@ void btn_event_release(void)
 			btn_press_ev[btn_up]=0;
 			switch(menu_mode)
 			{
+				case MENU_MODE_SEL:
+					sh_menu=SHOW_MENU_MODE_STEP;
+					menu_mode=MENU_MODE_START;
+					menu_mode_select_step=1;
+				break;
 				case MENU_MODE_STEP:
 				case MENU_MODE_CONF:
 					sh_menu=SHOW_MENU_MODE;
@@ -758,6 +803,10 @@ void btn_event_release(void)
 			btn_press_ev[btn_down]=0;
 			switch(menu_mode)
 			{
+				case MENU_MODE_START:
+					sh_menu=SHOW_MENU_MODE;
+					menu_mode=MENU_MODE_SEL;
+				break;
 				case MENU_MODE_SEL:
 					if (menu_mode_select==MENU_MODE_SEL_MAXS)
 					{
