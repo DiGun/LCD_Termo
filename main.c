@@ -219,13 +219,24 @@ uint16_t seconds;
 // Timer settings  30.517578125 Hz (F_CPU=80000000)
 inline void  tick(void)
 {
-		ticks++;
+	static uint8_t cnh=0;
+		cnh++;
+		if (cnh==conf_cur.time)
+		{
+			cnh=0;
+		}
+		else
+		{
+			ticks++;
+		}
 		if (ticks==30)
 		{
 			ticks=0;
 		}
 }
 
+
+uint8_t print_time(int8_t dir);
 
 uint8_t play_melody;
 
@@ -310,6 +321,43 @@ void play_check()
 }
 
 
+uint8_t tenn[3];
+
+uint8_t menu_mode;
+uint8_t menu_mode_select;
+uint8_t menu_mode_select_step;
+uint8_t menu_mode_param;
+uint8_t menu_mode_conf;
+
+#define MENU_MODE_PARAM_EDIT 3
+#define MENU_MODE_PARAM 2
+#define MENU_MODE_STEP 4
+#define MENU_MODE_SEL 1
+#define MENU_MODE_CONF	5
+#define MENU_MODE_CONF_EDIT	6
+#define MENU_MODE_START 7
+
+#define MENU_MODE_STEP_MAX	MODE_SEL_STEPS
+#define MENU_MODE_SEL_MAX	MODE_SEL_MAX
+#define MENU_MODE_SEL_MAXS	(MENU_MODE_SEL_MAX+1)
+
+#define MODE_CONF_MAX 4
+
+
+
+void work(void)
+{
+	if (menu_mode==MENU_MODE_START)
+	{
+		if (mode_work_cur.sec>0)
+		{
+			PORTB ^= (1<<PORTB0);
+			mode_work_cur.sec--;
+			lcd_gotoxy(5, 1);
+			print_time(0);
+		}
+	}
+}
 
 
 void quick_fn(void)
@@ -321,6 +369,7 @@ void quick_fn(void)
 	if (last_tick==0)
 	{
 		seconds++;
+		work();
 	}
 	play_check();
 	btn_check();
@@ -363,28 +412,8 @@ void print_bin(uint8_t b)
 }
 
 
-uint8_t menu_mode;
-uint8_t menu_mode_select;
-uint8_t menu_mode_select_step;
-uint8_t menu_mode_param;
-uint8_t menu_mode_conf;
 
-#define MENU_MODE_PARAM_EDIT 3
-#define MENU_MODE_PARAM 2
-#define MENU_MODE_STEP 4
-#define MENU_MODE_SEL 1
-#define MENU_MODE_CONF	5
-#define MENU_MODE_CONF_EDIT	6
-#define MENU_MODE_START 7
-
-#define MENU_MODE_STEP_MAX	MODE_SEL_STEPS
-#define MENU_MODE_SEL_MAX	MODE_SEL_MAX
-#define MENU_MODE_SEL_MAXS	(MENU_MODE_SEL_MAX+1)
-
-#define MODE_CONF_MAX 4
-
-
-inline void eep_load(void)
+void eep_load(void)
 {
 	eeprom_read_block(&mode_work_cur, &mode_work[menu_mode_select-1][menu_mode_select_step-1], sizeof(mode_work_t));
 }
@@ -422,10 +451,10 @@ void print_param(uint8_t n)
 	print_blank(5-strlen(buff));
 }
 
-uint8_t print_time(uint8_t dir)
+uint8_t print_time(int8_t dir)
 {
 			uint16_t minut;
-			char buff[4];
+			char buff[6];
 			minut=mode_work_cur.sec/60;
 			uint8_t s=0;
 			if (dir==0)
@@ -440,7 +469,7 @@ uint8_t print_time(uint8_t dir)
 			{
 				minut=540;
 			}
-			if (minut==0)
+			if ((minut==0)&&(dir!=0))
 			{
 				minut=1;
 			}
@@ -480,6 +509,12 @@ uint8_t print_time(uint8_t dir)
 			{
 				mode_work_cur.sec=minut*60;
 			}
+/*			
+			lcd_gotoxy(11, 0);
+			itoa(dir,buff,10);
+			lcd_puts(buff);
+			lcd_putc(' ');
+*/
 			return l;
 }
 
@@ -772,6 +807,7 @@ void btn_event_release(void)
 					sh_menu=SHOW_MENU_MODE_STEP;
 					menu_mode=MENU_MODE_START;
 					menu_mode_select_step=1;
+					eep_load();
 				break;
 				case MENU_MODE_STEP:
 				case MENU_MODE_CONF:
@@ -901,7 +937,9 @@ int main(void)
 	lcd_putc(0);
 	lcd_putc(1);
 	eep_load_conf();
+	memset(tenn,0,3);
 	_delay_ms(1000);
+	
 
 //	uint8_t f=255;
 //	mus_play_p(melod2_p, MEL2,1);	
