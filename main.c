@@ -13,13 +13,6 @@
 
 
 
-/* mode
-0	-	off/end
-1	-	on heater and wait for needed temp
-2	-	hold temp needed time
-3	-	off heater and wait for time
-4	-	off heater and wait for temp
-*/
 
 #define  MODE_TYPE_MAX 4
 
@@ -336,6 +329,7 @@ uint8_t menu_mode_conf;
 #define MENU_MODE_CONF	5
 #define MENU_MODE_CONF_EDIT	6
 #define MENU_MODE_START 7
+#define MENU_MODE_FINISH	8
 
 #define MENU_MODE_STEP_MAX	MODE_SEL_STEPS
 #define MENU_MODE_SEL_MAX	MODE_SEL_MAX
@@ -345,17 +339,128 @@ uint8_t menu_mode_conf;
 
 
 
+
+
+uint8_t sh_menu;
+#define SHOW_NONE 0
+#define SHOW_MENU_MODE 1
+#define SHOW_MENU_MODE_SELECT 2
+#define SHOW_MENU_MODE_STEP 3
+#define SHOW_MENU_MODE_PARAM 4
+#define SHOW_MENU_MODE_PARAM_EDIT 5
+#define SHOW_MENU_MODE_PARAM_EDIT_VALUE 6
+#define SHOW_MENU_CONF 7
+#define SHOW_MENU_CONF_EDIT	8
+#define SHOW_MENU_FINISH	9
+
+
+
+
+
+void eep_load(void)
+{
+	eeprom_read_block(&mode_work_cur, &mode_work[menu_mode_select-1][menu_mode_select_step-1], sizeof(mode_work_t));
+}
+
+inline void eep_save(void)
+{
+	eeprom_update_block(&mode_work_cur, &mode_work[menu_mode_select-1][menu_mode_select_step-1], sizeof(mode_work_t));
+}
+
+
+inline void eep_load_conf(void)
+{
+	eeprom_read_block(&conf_cur, &conf_e, sizeof(conf_t));
+}
+
+inline void eep_save_conf(void)
+{
+	eeprom_update_block(&conf_cur, &conf_e, sizeof(conf_t));
+}
+
+// ***************************************************************************************************************************************************
+/* mode
+0	-	off/end
+1	-	on heater and wait for needed temp
+2	-	hold temp needed time
+3	-	off heater and wait for time
+4	-	off heater and wait for temp
+*/
+// ***************************************************************************************************************************************************
+
+void work_finish(void)
+{
+	menu_mode=MENU_MODE_FINISH;
+	sh_menu=SHOW_MENU_FINISH;
+}
+
+
+void work_step_next(void)
+{
+	menu_mode_select_step++;
+	if (menu_mode_select_step>MODE_SEL_STEPS)
+	{
+		work_finish();
+	}
+	else
+	{
+		eep_load();
+		if (mode_work_cur.mode==0)
+		{
+			work_finish();
+		} 
+		else
+		{
+			lcd_gotoxy(9, 0);			
+			lcd_putc('0'+menu_mode_select_step);
+		}
+	}
+	
+}
+
+void work_step_check(void)
+{
+	switch (mode_work_cur.mode)
+	{
+		case 0:
+			work_finish();
+		break;
+		case 1:
+			; //wait temp
+			 work_step_next();
+		break;
+		case 2:
+		if (mode_work_cur.sec==0)
+		{
+			work_step_next();
+		};
+		break;
+		case 3:
+		if (mode_work_cur.sec==0)
+		{
+			work_step_next();
+		};
+		break;
+		case 4:
+			; //wait temp
+			work_step_next();
+		break;
+	}
+}
+
+
 void work(void)
 {
 	if (menu_mode==MENU_MODE_START)
 	{
 		if (mode_work_cur.sec>0)
 		{
-			PORTB ^= (1<<PORTB0);
+//			PORTB ^= (1<<PORTB0);
 			mode_work_cur.sec--;
 			lcd_gotoxy(5, 1);
 			print_time(0);
 		}
+		work_step_check();
 	}
 }
 
@@ -411,28 +516,6 @@ void print_bin(uint8_t b)
 	 }
 }
 
-
-
-void eep_load(void)
-{
-	eeprom_read_block(&mode_work_cur, &mode_work[menu_mode_select-1][menu_mode_select_step-1], sizeof(mode_work_t));
-}
-
-inline void eep_save(void)
-{
-	eeprom_update_block(&mode_work_cur, &mode_work[menu_mode_select-1][menu_mode_select_step-1], sizeof(mode_work_t));
-}
-
-
-inline void eep_load_conf(void)
-{
-	eeprom_read_block(&conf_cur, &conf_e, sizeof(conf_t));
-}
-
-inline void eep_save_conf(void)
-{
-	eeprom_update_block(&conf_cur, &conf_e, sizeof(conf_t));
-}
 
 
 void print_blank(uint8_t c)
@@ -586,17 +669,6 @@ void edit_conf_param(int8_t dir)
 }
 
 
-uint8_t sh_menu;
-#define SHOW_NONE 0
-#define SHOW_MENU_MODE 1
-#define SHOW_MENU_MODE_SELECT 2
-#define SHOW_MENU_MODE_STEP 3
-#define SHOW_MENU_MODE_PARAM 4
-#define SHOW_MENU_MODE_PARAM_EDIT 5
-#define SHOW_MENU_MODE_PARAM_EDIT_VALUE 6
-#define SHOW_MENU_CONF 7
-#define SHOW_MENU_CONF_EDIT	8
-
 void clear_screen(void)
 {
 	lcd_clrscr();
@@ -695,9 +767,22 @@ void menu(void)
 				sh_menu=SHOW_NONE;
 				lcd_gotoxy(6, 1);
 				lcd_putc('>');
-			break;		
+			break;
+			case SHOW_MENU_FINISH:
+				sh_menu=SHOW_NONE;
+				lcd_gotoxy(4,0);
+				lcd_puts_P("Finish");
+			break;
+			
 		}
 	}
+}
+
+void btn_event_finish(void)
+{
+	sh_menu=SHOW_MENU_MODE;
+	menu_mode=MENU_MODE_SEL;
+	clear_screen();
 }
 
 
@@ -748,6 +833,9 @@ void btn_event_release(void)
 				case MENU_MODE_CONF_EDIT:
 					edit_conf_param(-1);
 				break;
+				case MENU_MODE_FINISH:
+					btn_event_finish();
+				break;
 			}
 		}
 		if (btn_press_ev[btn_right]!=0)
@@ -795,6 +883,9 @@ void btn_event_release(void)
 				case MENU_MODE_CONF_EDIT:
 					edit_conf_param(1);
 				break;
+				case MENU_MODE_FINISH:
+					btn_event_finish();
+				break;
 			}
 		}
 		if (btn_press_ev[btn_up]!=0)
@@ -806,8 +897,8 @@ void btn_event_release(void)
 				case MENU_MODE_SEL:
 					sh_menu=SHOW_MENU_MODE_STEP;
 					menu_mode=MENU_MODE_START;
-					menu_mode_select_step=1;
-					eep_load();
+					menu_mode_select_step=0;
+					work_step_next();
 				break;
 				case MENU_MODE_STEP:
 				case MENU_MODE_CONF:
@@ -830,7 +921,9 @@ void btn_event_release(void)
 					eep_save_conf();
 					btn_repeat_lr=0;
 				break;
-				
+				case MENU_MODE_FINISH:
+					btn_event_finish();
+				break;
 			}
 		}
 		if (btn_press_ev[btn_down]!=0)
@@ -871,6 +964,9 @@ void btn_event_release(void)
 					btn_repeat_lr=1;
 					sh_menu=SHOW_MENU_CONF_EDIT;
 					menu_mode=MENU_MODE_CONF_EDIT;
+				break;
+				case MENU_MODE_FINISH:
+					btn_event_finish();
 				break;
 			}
 		}
