@@ -8,6 +8,7 @@
 #include <util/delay.h>
 #include <avr/eeprom.h>
 #include <string.h>
+#include "conf_io.h"
 #include "lcdpcf8574.h"
 #include "music.h"
 
@@ -32,6 +33,11 @@ typedef struct mode_work_st {
 	uint16_t sec;
 } mode_work_t;
 
+#define TEMP_MAX_STEP 30
+uint8_t termo[TEMP_MAX_STEP];
+uint8_t termo_cnt;
+
+
 #define MODE_PARAM_CNT 3
 
 
@@ -48,7 +54,7 @@ mode_work_t mode_work_cur;
 // #define PIN(x) (*(&x - 2))    /* address of input register of port x */
 
 //*** Buttons
-
+#ifndef  BTN
 #define BTN_1			(1<<PORTD0)
 #define BTN_2			(1<<PORTD1)
 #define BTN_3			(1<<PORTD2)
@@ -56,6 +62,7 @@ mode_work_t mode_work_cur;
 #define BTN_DDR			DDRD
 #define BTN_IN			PIND
 #define BTN_OUT			PORTD
+#endif // BTN
 
 
 void btn_init(void)
@@ -354,7 +361,14 @@ uint8_t sh_menu;
 #define SHOW_MENU_FINISH	9
 
 
-
+inline void spi_init(void)
+{
+   SPI_DDRX |= (1<<SPI_MOSI)|(1<<SPI_SCK)|(1<<SPI_SS)|(0<<SPI_MISO);
+   SPI_PORTX |= (1<<SPI_MOSI)|(1<<SPI_SCK)|(1<<SPI_SS)|(1<<SPI_MISO);
+   
+   SPCR = (1<<SPE)|(0<<DORD)|(1<<MSTR)|(0<<CPOL)|(0<<CPHA)|(1<<SPR1)|(0<<SPR0);
+   SPSR = (0<<SPI2X);
+}
 
 
 void eep_load(void)
@@ -377,6 +391,27 @@ inline void eep_save_conf(void)
 {
 	eeprom_update_block(&conf_cur, &conf_e, sizeof(conf_t));
 }
+
+
+
+int16_t SPI_ReadTemp(void)
+{
+	int16_t report = 0;
+	SPI_PORTX &= ~(1<<SPI_SS);
+	SPDR = 0;
+	while(!(SPSR & (1<<SPIF)));
+	report = SPDR;
+	SPDR = 0;
+	report <<= 8;
+	while(!(SPSR & (1<<SPIF)));
+	report |= SPDR;
+	SPI_PORTX |= (1<<SPI_SS);
+	report >>= 3;
+	
+	return report;
+}
+
+
 
 // ***************************************************************************************************************************************************
 /* mode
@@ -465,6 +500,38 @@ void work(void)
 }
 
 
+void get_temp(void)
+{
+	uint16_t tmp_temp;
+	tmp_temp=SPI_ReadTemp();
+	LED_PORT^=LED_PIN;
+	termo_cnt++;
+	if (termo_cnt==TEMP_MAX_STEP)
+	{
+		termo_cnt=0;
+	}
+	termo[termo_cnt]=(tmp_temp/(4));
+}
+
+uint8_t avg_temp(void)
+{
+	uint16_t tmp_temp=0;
+	for (uint8_t f=0;f<TEMP_MAX_STEP;f++)
+	{
+		tmp_temp+=termo[f];
+	}
+	return tmp_temp/TEMP_MAX_STEP;
+}
+
+void print_temp(void)
+{
+	lcd_gotoxy(11, 0);
+	char bf[11];
+	itoa(avg_temp(),bf,10);
+	lcd_puts(bf);
+}
+
+
 void quick_fn(void)
 {
   static uint8_t last_tick=255;
@@ -474,7 +541,15 @@ void quick_fn(void)
 	if (last_tick==0)
 	{
 		seconds++;
+		print_temp();
 		work();
+	}
+	else
+	{
+		if (((ticks+1)%4)==0)
+		{
+			get_temp();
+		}
 	}
 	play_check();
 	btn_check();
@@ -975,12 +1050,12 @@ void btn_event_release(void)
 int main(void)
 {
 	//init switch
-	DDRB |= (1<<PORTB0);
-	
-	PORTB &= !(1<<PORTB0);
+	LED_DDR|=LED_PIN;	
+	LED_PORT &= !LED_PIN;
 	//enable internal pull-up button up
 	play_melody=0;
 	seconds=0;
+	spi_init();
 	mus_init();
 	btn_init();
 	btn_repeat_lr=0;
@@ -1034,6 +1109,7 @@ int main(void)
 	lcd_putc(1);
 	eep_load_conf();
 	memset(tenn,0,3);
+	memset(termo,0,sizeof(termo));
 	_delay_ms(1000);
 	
 
