@@ -22,15 +22,20 @@
 #define SPI_PORTX PORTB
 #define SPI_DDRX DDRB
 
-#define SPI_MISO 4
-#define SPI_MOSI 3
-#define SPI_SCK 5
-#define SPI_SS PORTB2
+#define SPI_MISO PORTB4
+#define SPI_MOSI PORTB3
+#define SPI_SCK	 PORTB5
+#define SPI_SS   PORTB2
 
 #define LED_DDR DDRB
 #define LED_PORT PORTB
 #define LED_PIN (1<<PORTB0)
 
+#define TENN_DDR DDRC
+#define TENN_PORT PORTC
+#define TENN_PIN1 (1<<PORTC0)
+#define TENN_PIN2 (1<<PORTC1)
+#define TENN_PIN3 (1<<PORTC2)
 
 
 

@@ -36,7 +36,7 @@ typedef struct mode_work_st {
 #define TEMP_MAX_STEP 30
 uint8_t termo[TEMP_MAX_STEP];
 uint8_t termo_cnt;
-
+uint8_t termo_cur;
 
 #define MODE_PARAM_CNT 3
 
@@ -407,11 +407,16 @@ int16_t SPI_ReadTemp(void)
 	report |= SPDR;
 	SPI_PORTX |= (1<<SPI_SS);
 	report >>= 3;
-	
 	return report;
 }
 
-
+void print_blank(uint8_t c)
+{
+	for(uint8_t f=0;f<c;f++)
+	{
+		lcd_putc(' ');
+	}
+}
 
 // ***************************************************************************************************************************************************
 /* mode
@@ -423,10 +428,63 @@ int16_t SPI_ReadTemp(void)
 */
 // ***************************************************************************************************************************************************
 
+#define TEMP_AVG 1
+#define TEMP_CUR 2
+
+uint8_t avg_temp(void)
+{
+	uint16_t tmp_temp=0;
+	for (uint8_t f=0;f<TEMP_MAX_STEP;f++)
+	{
+		tmp_temp+=termo[f];
+	}
+	return tmp_temp/TEMP_MAX_STEP;
+}
+
+
+void print_temp(uint8_t data)
+{
+	uint8_t val=255;
+	char bf[11];
+	switch (data)
+	{
+		case TEMP_AVG:
+			val=avg_temp();
+			termo_cur=val;
+			lcd_gotoxy(12, 1);
+		break;
+		case TEMP_CUR:
+			LED_PORT^=LED_PIN;
+			val=mode_work_cur.temp;
+			lcd_gotoxy(12, 0);
+		break;
+	}
+	if (val<100)
+	{
+		lcd_putc(' ');
+		if (val<10)
+		{
+			lcd_putc(' ');
+		}
+	}
+	if (val!=255)
+	{
+		itoa(val,bf,10);
+		lcd_puts(bf);
+		lcd_putc(0xDF);
+	}
+	else
+	{
+		print_blank(4);
+	}
+}
+
+
 void work_finish(void)
 {
 	menu_mode=MENU_MODE_FINISH;
 	sh_menu=SHOW_MENU_FINISH;
+	memset(tenn,1,sizeof(tenn));
 }
 
 
@@ -448,9 +506,10 @@ void work_step_next(void)
 		{
 			lcd_gotoxy(9, 0);			
 			lcd_putc('0'+menu_mode_select_step);
+			print_temp(TEMP_CUR);
+//			memset(tenn,1,sizeof(tenn));			
 		}
 	}
-	
 }
 
 void work_step_check(void)
@@ -461,24 +520,34 @@ void work_step_check(void)
 			work_finish();
 		break;
 		case 1:
-			; //wait temp
-			 work_step_next();
+			memset(tenn,1,sizeof(tenn));
+			if (mode_work_cur.temp>=termo_cur)
+			{
+				 //wait temp
+				 work_step_next();
+			}
 		break;
 		case 2:
-		if (mode_work_cur.sec==0)
-		{
-			work_step_next();
-		};
+			memset(tenn,1,sizeof(tenn));
+			if (mode_work_cur.sec==0)
+			{
+				work_step_next();
+			};
 		break;
 		case 3:
-		if (mode_work_cur.sec==0)
-		{
-			work_step_next();
-		};
+			memset(tenn,0,sizeof(tenn));
+			if (mode_work_cur.sec==0)
+			{
+				work_step_next();
+			}
 		break;
 		case 4:
-			; //wait temp
-			work_step_next();
+			memset(tenn,0,sizeof(tenn));
+			if (mode_work_cur.temp>=termo_cur)
+			{
+				//wait temp
+				work_step_next();
+			}
 		break;
 	}
 }
@@ -490,9 +559,8 @@ void work(void)
 	{
 		if (mode_work_cur.sec>0)
 		{
-//			PORTB ^= (1<<PORTB0);
 			mode_work_cur.sec--;
-			lcd_gotoxy(5, 1);
+			lcd_gotoxy(4, 1);
 			print_time(0);
 		}
 		work_step_check();
@@ -504,7 +572,7 @@ void get_temp(void)
 {
 	uint16_t tmp_temp;
 	tmp_temp=SPI_ReadTemp();
-	LED_PORT^=LED_PIN;
+//	LED_PORT^=LED_PIN;
 	termo_cnt++;
 	if (termo_cnt==TEMP_MAX_STEP)
 	{
@@ -513,24 +581,7 @@ void get_temp(void)
 	termo[termo_cnt]=(tmp_temp/(4));
 }
 
-uint8_t avg_temp(void)
-{
-	uint16_t tmp_temp=0;
-	for (uint8_t f=0;f<TEMP_MAX_STEP;f++)
-	{
-		tmp_temp+=termo[f];
-	}
-	return tmp_temp/TEMP_MAX_STEP;
-}
-
-void print_temp(void)
-{
-	lcd_gotoxy(11, 0);
-	char bf[11];
-	itoa(avg_temp(),bf,10);
-	lcd_puts(bf);
-}
-
+void print_work(void);
 
 void quick_fn(void)
 {
@@ -541,12 +592,13 @@ void quick_fn(void)
 	if (last_tick==0)
 	{
 		seconds++;
-		print_temp();
+		print_temp(TEMP_AVG);
 		work();
+		print_work();
 	}
 	else
 	{
-		if (((ticks+1)%4)==0)
+		if (((ticks+2)%4)==0)
 		{
 			get_temp();
 		}
@@ -592,14 +644,53 @@ void print_bin(uint8_t b)
 }
 
 
-
-void print_blank(uint8_t c)
+void print_arrow(uint8_t idx,uint8_t pin)
 {
-	for(uint8_t f=0;f<c;f++)
+	static uint8_t last=0x00;
+	if (tenn[idx]!=0)
 	{
-		lcd_putc(' ');
+		if ((last&pin)==0)
+		{
+			last|=pin;
+ 			lcd_gotoxy(idx, 1);
+			lcd_putc(1);
+		}
+	}
+	else
+	{
+		if ((last&pin)!=0)
+		{
+			last&=!pin;
+ 			lcd_gotoxy(idx, 1);
+ 			lcd_putc(0);
+		}
 	}
 }
+
+void print_work(void)
+{
+	static uint8_t i=0;
+	uint8_t pin=0;
+	switch (i)
+	{
+		case 0:
+			pin=TENN_PIN1;
+		break;
+		case 1:
+			pin=TENN_PIN2;
+		break;
+		case 2:
+			pin=TENN_PIN3;
+		break;
+	}
+	print_arrow(i,pin);
+	i++;
+	if(i==3)
+	{
+		i=0;
+	}
+}
+
 
 void print_param(uint8_t n)
 {
@@ -780,7 +871,8 @@ void menu(void)
 			break;
 			case SHOW_MENU_MODE_STEP:
 				sh_menu=SHOW_NONE;
-				clear_screen();
+//				clear_screen();
+				lcd_gotoxy(0, 0);
 				lcd_putc('M');
 				lcd_putc(':');
 				lcd_putc('0'+menu_mode_select);
@@ -789,8 +881,12 @@ void menu(void)
 				lcd_putc('0'+menu_mode_select_step);
 				if (menu_mode==MENU_MODE_START)
 				{
+					lcd_putc('0'+mode_work_cur.mode);
 					lcd_gotoxy(0, 1);
-					lcd_puts_P("Work:");
+					lcd_putc(0);
+					lcd_putc(0);
+					lcd_putc(0);
+					lcd_putc(' ');
 					print_time(0);
 				}
 			break;
@@ -846,7 +942,7 @@ void menu(void)
 			case SHOW_MENU_FINISH:
 				sh_menu=SHOW_NONE;
 				lcd_gotoxy(4,0);
-				lcd_puts_P("Finish");
+				lcd_puts_P(" Finish");
 			break;
 			
 		}
@@ -1052,6 +1148,8 @@ int main(void)
 	//init switch
 	LED_DDR|=LED_PIN;	
 	LED_PORT &= !LED_PIN;
+	TENN_DDR|=(TENN_PIN1|TENN_PIN2|TENN_PIN3);
+	TENN_PORT &= !(TENN_PIN1|TENN_PIN2|TENN_PIN3);
 	//enable internal pull-up button up
 	play_melody=0;
 	seconds=0;
@@ -1109,7 +1207,7 @@ int main(void)
 	lcd_putc(1);
 	eep_load_conf();
 	memset(tenn,0,3);
-	memset(termo,0,sizeof(termo));
+	memset(termo,20,sizeof(termo));
 	_delay_ms(1000);
 	
 
