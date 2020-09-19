@@ -507,7 +507,23 @@ void work_step_next(void)
 			lcd_gotoxy(9, 0);			
 			lcd_putc('0'+menu_mode_select_step);
 			print_temp(TEMP_CUR);
-//			memset(tenn,1,sizeof(tenn));			
+			switch (mode_work_cur.mode)
+			{
+				case 1:
+					memset(tenn,1,sizeof(tenn));
+					mode_work_cur.sec=0;
+				break;
+				case 2:
+					memset(tenn,1,sizeof(tenn));
+				break;
+				case 3:
+					memset(tenn,0,sizeof(tenn));
+				break;
+				case 4:
+					memset(tenn,0,sizeof(tenn));
+					mode_work_cur.sec=0;
+				break;
+			}
 		}
 	}
 }
@@ -520,29 +536,25 @@ void work_step_check(void)
 			work_finish();
 		break;
 		case 1:
-			memset(tenn,1,sizeof(tenn));
-			if (mode_work_cur.temp>=termo_cur)
+			if (mode_work_cur.temp<=termo_cur)
 			{
 				 //wait temp
 				 work_step_next();
 			}
 		break;
 		case 2:
-			memset(tenn,1,sizeof(tenn));
 			if (mode_work_cur.sec==0)
 			{
 				work_step_next();
 			};
 		break;
 		case 3:
-			memset(tenn,0,sizeof(tenn));
 			if (mode_work_cur.sec==0)
 			{
 				work_step_next();
 			}
 		break;
 		case 4:
-			memset(tenn,0,sizeof(tenn));
 			if (mode_work_cur.temp>=termo_cur)
 			{
 				//wait temp
@@ -557,12 +569,22 @@ void work(void)
 {
 	if (menu_mode==MENU_MODE_START)
 	{
-		if (mode_work_cur.sec>0)
+		switch (mode_work_cur.mode)
 		{
-			mode_work_cur.sec--;
-			lcd_gotoxy(4, 1);
-			print_time(0);
+			case 1:
+			case 4:
+					mode_work_cur.sec++;
+			break;
+			case 2:
+			case 3:
+				if (mode_work_cur.sec>0)
+				{
+					mode_work_cur.sec--;
+				}
+			break;
 		}
+		lcd_gotoxy(4, 1);
+		print_time(0);
 		work_step_check();
 	}
 }
@@ -1056,6 +1078,9 @@ void btn_event_release(void)
 				break;
 				case MENU_MODE_FINISH:
 					btn_event_finish();
+				break;
+				case MENU_MODE_START:
+					work_step_next();
 				break;
 			}
 		}
