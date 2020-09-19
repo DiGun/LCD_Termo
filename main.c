@@ -346,8 +346,6 @@ uint8_t menu_mode_conf;
 
 
 
-
-
 uint8_t sh_menu;
 #define SHOW_NONE 0
 #define SHOW_MENU_MODE 1
@@ -514,7 +512,7 @@ void work_step_next(void)
 					mode_work_cur.sec=0;
 				break;
 				case 2:
-					memset(tenn,1,sizeof(tenn));
+					memset(tenn,0,sizeof(tenn));
 				break;
 				case 3:
 					memset(tenn,0,sizeof(tenn));
@@ -525,6 +523,18 @@ void work_step_next(void)
 				break;
 			}
 		}
+	}
+}
+
+void work_histerezis(void)
+{
+	if ((mode_work_cur.temp-conf_cur.d_down)<termo_cur)
+	{
+		tenn[seconds%3]=1;
+	}
+	if ((mode_work_cur.temp+conf_cur.d_up)>=termo_cur)
+	{
+		memset(tenn,0,sizeof(tenn));
 	}
 }
 
@@ -546,7 +556,11 @@ void work_step_check(void)
 			if (mode_work_cur.sec==0)
 			{
 				work_step_next();
-			};
+			}
+			else
+			{
+				work_histerezis();
+			}
 		break;
 		case 3:
 			if (mode_work_cur.sec==0)
