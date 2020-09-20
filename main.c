@@ -485,6 +485,7 @@ void work_finish(void)
 	memset(tenn,1,sizeof(tenn));
 }
 
+uint8_t work_up;
 
 void work_step_next(void)
 {
@@ -512,7 +513,9 @@ void work_step_next(void)
 					mode_work_cur.sec=0;
 				break;
 				case 2:
+					work_up=1;
 					memset(tenn,0,sizeof(tenn));
+					tenn[seconds%3]=1;					
 				break;
 				case 3:
 					memset(tenn,0,sizeof(tenn));
@@ -525,16 +528,36 @@ void work_step_next(void)
 		}
 	}
 }
-
+/*
+uint8_t is_on(void)
+{
+	uint8_t r=0;
+	for (uint8_t f=0;f<3;f++)
+	{
+		r+=(tenn[f]!=0?1:0);
+	}
+	return r;
+}
+*/
 void work_histerezis(void)
 {
-	if ((mode_work_cur.temp-conf_cur.d_down)<termo_cur)
+//	colder
+	if ((mode_work_cur.temp-conf_cur.d_down)>=termo_cur)
 	{
-		tenn[seconds%3]=1;
+		if (work_up==0)
+		{
+			tenn[seconds%3]=1;
+			work_up=1;
+		}
 	}
-	if ((mode_work_cur.temp+conf_cur.d_up)>=termo_cur)
+// hotter
+	if ((mode_work_cur.temp+conf_cur.d_up)<=termo_cur)
 	{
-		memset(tenn,0,sizeof(tenn));
+		if (work_up==1)
+		{
+			memset(tenn,0,sizeof(tenn));
+			work_up=0;
+		}
 	}
 }
 
@@ -688,6 +711,7 @@ void print_arrow(uint8_t idx,uint8_t pin)
 		if ((last&pin)==0)
 		{
 			last|=pin;
+			TENN_PORT|=pin;
  			lcd_gotoxy(idx, 1);
 			lcd_putc(1);
 		}
@@ -697,6 +721,7 @@ void print_arrow(uint8_t idx,uint8_t pin)
 		if ((last&pin)!=0)
 		{
 			last&=!pin;
+			TENN_PORT&=!pin;
  			lcd_gotoxy(idx, 1);
  			lcd_putc(0);
 		}
