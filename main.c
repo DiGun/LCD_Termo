@@ -103,21 +103,16 @@ void btn_check(void)
 	{
 		if (btn[f]==0)
 		{
-//			btn_last_state[f]|=1;
 			btn_last_state[f]=0b00000111;
 		}
 		else
 		{
 			btn_last_state[f]>>=1;
-//			btn_last_state[f]&=~1;
 			btn_last_state[f]&=~(0b10000000);
 		}
 		if (btn_last_state[f]==0)
 		{
-//				if (btn_press[f]!=0)
-				{
-					btn_press[f]=0;
-				}
+			btn_press[f]=0;
 		}
 		else
 		{
@@ -321,7 +316,9 @@ void play_check()
 }
 
 
-uint8_t tenn[3];
+// uint8_t tenn[3];
+uint8_t tenn_on;
+uint8_t tenn_cur;
 
 uint8_t menu_mode;
 uint8_t menu_mode_select;
@@ -419,7 +416,7 @@ void print_blank(uint8_t c)
 // ***************************************************************************************************************************************************
 /* mode
 0	-	off/end
-1	-	on heater and wait for needed temp
+1	-	on all heater and wait for needed temp
 2	-	hold temp needed time
 3	-	off heater and wait for time
 4	-	off heater and wait for temp
@@ -452,7 +449,7 @@ void print_temp(uint8_t data)
 			lcd_gotoxy(12, 1);
 		break;
 		case TEMP_CUR:
-			LED_PORT^=LED_PIN;
+//			LED_PORT^=LED_PIN;
 			val=mode_work_cur.temp;
 			lcd_gotoxy(12, 0);
 		break;
@@ -482,7 +479,9 @@ void work_finish(void)
 {
 	menu_mode=MENU_MODE_FINISH;
 	sh_menu=SHOW_MENU_FINISH;
-	memset(tenn,1,sizeof(tenn));
+	tenn_on=0;
+	tenn_cur=0;
+	TENN_PORT&=~(TENN_PIN1|TENN_PIN2|TENN_PIN3);
 }
 
 uint8_t work_up;
@@ -509,36 +508,26 @@ void work_step_next(void)
 			switch (mode_work_cur.mode)
 			{
 				case 1:
-					memset(tenn,1,sizeof(tenn));
+					tenn_on=3;
 					mode_work_cur.sec=0;
 				break;
 				case 2:
 					work_up=1;
-					memset(tenn,0,sizeof(tenn));
-					tenn[seconds%3]=1;					
+					tenn_on=1;
 				break;
 				case 3:
-					memset(tenn,0,sizeof(tenn));
+					tenn_on=0;
 				break;
 				case 4:
-					memset(tenn,0,sizeof(tenn));
+					tenn_on=0;
 					mode_work_cur.sec=0;
 				break;
 			}
 		}
 	}
 }
-/*
-uint8_t is_on(void)
-{
-	uint8_t r=0;
-	for (uint8_t f=0;f<3;f++)
-	{
-		r+=(tenn[f]!=0?1:0);
-	}
-	return r;
-}
-*/
+
+
 void work_histerezis(void)
 {
 //	colder
@@ -546,7 +535,7 @@ void work_histerezis(void)
 	{
 		if (work_up==0)
 		{
-			tenn[seconds%3]=1;
+			tenn_on=1;
 			work_up=1;
 		}
 	}
@@ -555,7 +544,7 @@ void work_histerezis(void)
 	{
 		if (work_up==1)
 		{
-			memset(tenn,0,sizeof(tenn));
+			tenn_on=0;
 			work_up=0;
 		}
 	}
@@ -703,28 +692,25 @@ void print_bin(uint8_t b)
 }
 
 
-void print_arrow(uint8_t idx,uint8_t pin)
+void tenn__on(uint8_t idx,uint8_t pin)
 {
-	static uint8_t last=0x00;
-	if (tenn[idx]!=0)
+	if ((TENN_PIN&pin)==0)
 	{
-		if ((last&pin)==0)
-		{
-			last|=pin;
 			TENN_PORT|=pin;
+			tenn_cur++;
  			lcd_gotoxy(idx, 1);
-			lcd_putc(1);
-		}
+ 			lcd_putc(1);			
 	}
-	else
+}
+
+void tenn_off(uint8_t idx,uint8_t pin)
+{
+	if ((TENN_PIN&pin)!=0)
 	{
-		if ((last&pin)!=0)
-		{
-			last&=!pin;
-			TENN_PORT&=!pin;
+			TENN_PORT&=~pin;
+			tenn_cur--;
  			lcd_gotoxy(idx, 1);
  			lcd_putc(0);
-		}
 	}
 }
 
@@ -732,19 +718,39 @@ void print_work(void)
 {
 	static uint8_t i=0;
 	uint8_t pin=0;
-	switch (i)
+	if (tenn_cur!=tenn_on)
 	{
-		case 0:
-			pin=TENN_PIN1;
-		break;
-		case 1:
-			pin=TENN_PIN2;
-		break;
-		case 2:
-			pin=TENN_PIN3;
-		break;
+		switch (i)
+		{
+			case 0:
+				pin=TENN_PIN1;
+			break;
+			case 1:
+				pin=TENN_PIN2;
+			break;
+			case 2:
+				pin=TENN_PIN3;
+			break;
+		}
+		if (tenn_cur>tenn_on)
+		{
+			tenn_off(i,pin);
+		}
+		else
+		{
+			tenn__on(i,pin);
+		}
 	}
-	print_arrow(i,pin);
+/*
+		char b[4];
+		lcd_gotoxy(0, 0);
+		itoa(tenn_cur,b,10);
+		lcd_puts(b);
+		itoa(tenn_on,b,10);
+		lcd_puts(b);
+		itoa(TENN_PORT&(TENN_PIN1|TENN_PIN2|TENN_PIN3),b,10);
+		lcd_puts(b);
+*/
 	i++;
 	if(i==3)
 	{
@@ -1168,8 +1174,9 @@ void btn_event_release(void)
 			switch(menu_mode)
 			{
 				case MENU_MODE_START:
-					sh_menu=SHOW_MENU_MODE;
-					menu_mode=MENU_MODE_SEL;
+					work_finish();
+//					sh_menu=SHOW_MENU_MODE;
+//					menu_mode=MENU_MODE_SEL;
 				break;
 				case MENU_MODE_SEL:
 					if (menu_mode_select==MENU_MODE_SEL_MAXS)
@@ -1211,9 +1218,9 @@ int main(void)
 {
 	//init switch
 	LED_DDR|=LED_PIN;	
-	LED_PORT &= !LED_PIN;
+	LED_PORT &= ~LED_PIN;
 	TENN_DDR|=(TENN_PIN1|TENN_PIN2|TENN_PIN3);
-	TENN_PORT &= !(TENN_PIN1|TENN_PIN2|TENN_PIN3);
+	TENN_PORT &= ~(TENN_PIN1|TENN_PIN2|TENN_PIN3);
 	//enable internal pull-up button up
 	play_melody=0;
 	seconds=0;
@@ -1270,7 +1277,8 @@ int main(void)
 	lcd_putc(0);
 	lcd_putc(1);
 	eep_load_conf();
-	memset(tenn,0,3);
+	tenn_on=0;
+	tenn_cur=0;
 	memset(termo,20,sizeof(termo));
 	_delay_ms(1000);
 	

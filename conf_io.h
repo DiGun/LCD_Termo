@@ -33,6 +33,7 @@
 
 #define TENN_DDR DDRC
 #define TENN_PORT PORTC
+#define TENN_PIN  PINC  
 #define TENN_PIN1 (1<<PORTC0)
 #define TENN_PIN2 (1<<PORTC1)
 #define TENN_PIN3 (1<<PORTC2)
