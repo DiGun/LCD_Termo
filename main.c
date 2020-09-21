@@ -908,6 +908,12 @@ void clear_screen(void)
 	lcd_gotoxy(0, 0);	
 }
 
+void show_select(void)
+{
+	lcd_gotoxy(0, 1);
+	lcd_puts_P("Select");
+	print_blank(4);
+}
 
 void menu(void)
 {
@@ -919,9 +925,7 @@ void menu(void)
 				sh_menu=SHOW_MENU_MODE_SELECT;
 				lcd_gotoxy(0, 0);
 				lcd_puts_P("Mode:");
-				lcd_gotoxy(0, 1);
-				lcd_puts_P("Select");
-				print_blank(4);
+				show_select();
 			break;
 			case SHOW_MENU_MODE_SELECT:
 				sh_menu=SHOW_NONE;
@@ -955,6 +959,10 @@ void menu(void)
 					lcd_putc(0);
 					lcd_putc(' ');
 					print_time(0);
+				}
+				else
+				{
+					show_select();					
 				}
 			break;
 
@@ -1010,6 +1018,11 @@ void menu(void)
 				sh_menu=SHOW_NONE;
 				lcd_gotoxy(4,0);
 				lcd_puts_P(" Finish");
+				print_blank(5);
+				lcd_gotoxy(0, 1);
+				lcd_putc(0);
+				lcd_putc(0);
+				lcd_putc(0);
 			break;
 			
 		}
@@ -1136,10 +1149,13 @@ void btn_event_release(void)
 			switch(menu_mode)
 			{
 				case MENU_MODE_SEL:
-					sh_menu=SHOW_MENU_MODE_STEP;
-					menu_mode=MENU_MODE_START;
-					menu_mode_select_step=0;
-					work_step_next();
+					if (menu_mode_select!=MENU_MODE_SEL_MAXS)
+					{
+						sh_menu=SHOW_MENU_MODE_STEP;
+						menu_mode=MENU_MODE_START;
+						menu_mode_select_step=0;
+						work_step_next();
+					}
 				break;
 				case MENU_MODE_STEP:
 				case MENU_MODE_CONF:
@@ -1221,7 +1237,6 @@ int main(void)
 	LED_PORT &= ~LED_PIN;
 	TENN_DDR|=(TENN_PIN1|TENN_PIN2|TENN_PIN3);
 	TENN_PORT &= ~(TENN_PIN1|TENN_PIN2|TENN_PIN3);
-	//enable internal pull-up button up
 	play_melody=0;
 	seconds=0;
 	spi_init();
