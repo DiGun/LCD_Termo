@@ -143,14 +143,14 @@ void btn_check(void)
 
 
 const char PROGMEM char_down_p[8]  ={
-									0b00100,
-									0b00100,
-									0b00100,
-									0b00100,
-									0b00100,
-									0b10101,
-									0b01110,
-									0b00100
+	0b00100,
+	0b00100,
+	0b00100,
+	0b00100,
+	0b00100,
+	0b10101,
+	0b01110,
+	0b00100
 								};
 const char PROGMEM char_up_p[8]  ={
 	0b00100,
@@ -164,25 +164,8 @@ const char PROGMEM char_up_p[8]  ={
 };
 
 
-#define MEL2	11
-/*
-note_t melod2[MEL2] =
-{
-	{ TONE(A1),O8 },
-	{ TONE(C2),O8 },
-	{ TONE(E2),O8 },
-	{ TONE(C2),O8 },
-	{ TONE(D2),O4 },
-	{ TONE(C2),O8 },
-	{ TONE(B1),O8 },
-	{ TONE(E2),O4 },
-	{ TONE(D2),O4 },
-	{ TONE(A1),O4 },
-	{ 0,O4 }
-};
-*/
-
-const note_t  melod2_p[MEL2] PROGMEM=
+#define PLAY_INTRO_CNT	11
+const note_t  m_intro_p[PLAY_INTRO_CNT] PROGMEM=
 {
 	{ TONE(A1),O8 },
 	{ TONE(C2),O8 },
@@ -234,21 +217,32 @@ inline void  tick(void)
 uint8_t print_time(int8_t dir);
 
 uint8_t play_melody;
+note_t  sound_buff[3];
+uint8_t sound_buff_cnt;
+
+#define PLAY_NONE	0
+#define PLAY_INTRO	1
+#define PLAY_TOUCH	2
 
 void play_check()
 {
 	switch (play_melody)
 	{
-		case 0:
+		case PLAY_NONE:
 		break;
-		case 1:
-//		mus_play(melod2, MEL2,0);
-		mus_play_p(melod2_p, MEL2,0);
+		case PLAY_INTRO:
+		mus_play_p(m_intro_p, PLAY_INTRO_CNT,0);
 		if (mus_play_stop)
 		{
-			play_melody=0;
+			play_melody=PLAY_NONE;
 		}
 		break;
+		case PLAY_TOUCH:
+		mus_play(sound_buff, sound_buff_cnt,0);
+		if (mus_play_stop)
+		{
+			play_melody=PLAY_NONE;
+		}
 	}
 /*
 		case 2:
@@ -858,9 +852,6 @@ void edit_mode_param(int8_t dir)
 		case 3:
 		{
 			print_time(dir);
-//			uint8_t l;
-//			l=print_time(dir);
-//			print_blank(5-l);
 		}
 		break;
 	}
@@ -942,7 +933,6 @@ void menu(void)
 			break;
 			case SHOW_MENU_MODE_STEP:
 				sh_menu=SHOW_NONE;
-//				clear_screen();
 				lcd_gotoxy(0, 0);
 				lcd_putc('M');
 				lcd_putc(':');
@@ -1043,6 +1033,16 @@ void btn_event_release(void)
 		{
 			// left
 			btn_press_ev[btn_left]=0;
+			
+			if (conf_cur.sound)
+			{
+				sound_buff[0].tone=TONE(C3);
+				sound_buff[0].leng=O16;
+				sound_buff_cnt=1;
+				play_melody=PLAY_TOUCH;
+				mus_play(sound_buff, sound_buff_cnt,1);
+			}
+			
 			switch(menu_mode)
 			{
 				case MENU_MODE_SEL:
@@ -1093,6 +1093,16 @@ void btn_event_release(void)
 		{
 			// right
 			btn_press_ev[btn_right]=0;
+
+			if (conf_cur.sound)
+			{
+				sound_buff[0].tone=TONE(G3);
+				sound_buff[0].leng=O16;
+				sound_buff_cnt=1;
+				play_melody=PLAY_TOUCH;
+				mus_play(sound_buff, sound_buff_cnt,1);
+			}
+			
 			switch(menu_mode)
 			{
 				case MENU_MODE_SEL:
@@ -1146,6 +1156,18 @@ void btn_event_release(void)
 		{
 			// up
 			btn_press_ev[btn_up]=0;
+			
+			if (conf_cur.sound)
+			{
+				sound_buff[0].tone=TONE(E2);
+				sound_buff[0].leng=O16;
+				sound_buff[1].tone=TONE(G2);
+				sound_buff[1].leng=O16;
+				sound_buff_cnt=2;
+				play_melody=PLAY_TOUCH;
+				mus_play(sound_buff, sound_buff_cnt,1);
+			}
+			
 			switch(menu_mode)
 			{
 				case MENU_MODE_SEL:
@@ -1187,6 +1209,18 @@ void btn_event_release(void)
 		{
 			// down
 			btn_press_ev[btn_down]=0;
+			
+			if (conf_cur.sound)
+			{
+				sound_buff[0].tone=TONE(E2);
+				sound_buff[0].leng=O16;
+				sound_buff[1].tone=TONE(C2);
+				sound_buff[1].leng=O16;
+				sound_buff_cnt=2;
+				play_melody=PLAY_TOUCH;
+				mus_play(sound_buff, sound_buff_cnt,1);
+			}
+			
 			switch(menu_mode)
 			{
 				case MENU_MODE_START:
@@ -1237,7 +1271,6 @@ int main(void)
 	LED_PORT &= ~LED_PIN;
 	TENN_DDR|=(TENN_PIN1|TENN_PIN2|TENN_PIN3);
 	TENN_PORT &= ~(TENN_PIN1|TENN_PIN2|TENN_PIN3);
-	play_melody=0;
 	seconds=0;
 	spi_init();
 	mus_init();
@@ -1249,40 +1282,20 @@ int main(void)
 	menu_mode_select=1;
 	menu_mode_param=1;
 	sei();
+
+	eep_load_conf();
+	if (conf_cur.sound)
+	{
+		mus_play_p(m_intro_p, PLAY_INTRO_CNT,1);
+		play_melody=PLAY_INTRO;
+	}
 	
 	//init lcd
 	lcd_init(LCD_DISP_ON);
 
 	//lcd go home
 	lcd_home();
-/*
-	char s[5];
-	
-	mode_work_cur.mode=3;
-	mode_work_cur.temp=5;
-	mode_work_cur.sec=44;
-	itoa(mode_work_cur.mode, s, 10);
-	lcd_puts(s);
-	lcd_putc(' ');
-	itoa(mode_work_cur.temp, s, 10);
-	lcd_puts(s);
-	lcd_putc(' ');
-	itoa(mode_work_cur.sec, s, 10);
-	lcd_puts(s);
-	eep_save();
-	eep_load();
-	lcd_gotoxy(0, 1);
-	itoa(mode_work_cur.mode, s, 10);
-	lcd_puts(s);
-	lcd_putc(' ');
-	itoa(mode_work_cur.temp, s, 10);
-	lcd_puts(s);
-	lcd_putc(' ');
-	itoa(mode_work_cur.sec, s, 10);
-	lcd_puts(s);
 
-	while (1);
-*/	
 	uint8_t led = 0;
 	lcd_led(led); //set led
 	lcd_puts_P("metrolog.org.ua");
@@ -1291,16 +1304,21 @@ int main(void)
 	lcd_gotoxy(0, 1);
 	lcd_putc(0);
 	lcd_putc(1);
-	eep_load_conf();
+	memset(termo,20,sizeof(termo));
 	tenn_on=0;
 	tenn_cur=0;
-	memset(termo,20,sizeof(termo));
-	_delay_ms(1000);
-	
 
-//	uint8_t f=255;
-//	mus_play_p(melod2_p, MEL2,1);	
-//	play_melody=1;
+	if (conf_cur.sound)
+	{
+		while(play_melody!=0)
+		{
+			play_check();
+		}
+	}
+	else
+	{
+		_delay_ms(1000);
+	}
 
 	lcd_clrscr();
 	lcd_gotoxy(0, 0);
