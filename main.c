@@ -6,13 +6,12 @@
 // #define F_CPU 16000000UL
 // #define F_CPU  8000000UL
 #include <util/delay.h>
+#include <avr/wdt.h>
 #include <avr/eeprom.h>
 #include <string.h>
 #include "conf_io.h"
 #include "lcdpcf8574.h"
 #include "music.h"
-
-
 
 
 #define  MODE_TYPE_MAX 4
@@ -769,6 +768,7 @@ void quick_fn(void)
 	}
 	play_check();
 	btn_check();
+	wdt_reset();
   }
 }
 
@@ -1441,6 +1441,7 @@ int main(void)
 	{
 		_delay_ms(1000);
 	}
+	wdt_enable(WDTO_1S);
 
 	lcd_clrscr();
 	lcd_gotoxy(0, 0);
@@ -1452,5 +1453,3 @@ int main(void)
 		menu();
 	}
 }
-
-
