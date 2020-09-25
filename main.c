@@ -180,6 +180,108 @@ const note_t  m_intro_p[PLAY_INTRO_CNT] PROGMEM=
 	{ 0,O4 }
 };
 
+#define PLAY_COLD_CNT 6
+const note_t  m_cold_p[PLAY_COLD_CNT] PROGMEM=
+{
+	{ TONE(A2),O8 },
+	{ TONE(A2),O8 },
+	
+	{ TONE(G2),O8 },
+	{ TONE(G2),O8 },
+	{ TONE(A2),O4 },
+	{ TONE(E2),O4 },
+};
+
+
+#define PLAY_LETO_CNT	67
+note_t m_leto_p[PLAY_LETO_CNT] =
+{
+	{ TONE(D1),O8 },
+	{ TONE(D1),O8 },
+	{ TONE(D1),O8 },
+	{ TONE(D1),O8 },
+	{ TONE(D1),O4 },
+	{ TONE(G1),O4 },
+	
+	{ TONE(D1),O4 },
+	{ TONE(A1),O4 },
+	{ TONE(D1),O4 },
+	{ TONE(A1),O4 },
+	
+	{ TONE(D1),O8 },
+	{ TONE(D1),O8 },
+	{ TONE(D1),O8 },
+	{ TONE(D1),O8 },
+	{ TONE(D1),O4 },
+	{ TONE(B1),O4 },
+
+
+	{ TONE(D1),O4 },
+	{ TONE(C2),O4 },
+	{ TONE(B1),O4 },
+	{ TONE(C2),O4 },
+
+	{ TONE(D2),O8 },
+	{ TONE(D2),O8 },
+	{ TONE(D2),O8 },
+	{ TONE(D2),O8 },
+	{ TONE(D2),O4 },
+	{ TONE(B1),O4 },
+
+	{ TONE(G1),O4 },
+	{ TONE(B1),O4 },
+	{ TONE(G1),O4 },
+	{ TONE(B1),O4 },
+	
+	{ TONE(D1),O8 },
+	{ TONE(D1),O8 },
+	{ TONE(D1),O8 },
+	{ TONE(D1),O8 },
+	{ TONE(D1),O4 },
+	{ TONE(A1),O4 },
+	
+	{ TONE(G1),O4 },
+	{ 0,O2+O4 },
+	
+	{ TONE(D2),O2 },
+	{ TONE(B1),O4 },
+	{ TONE(B1),O4 },
+	
+	{ TONE(D2),O4 },
+	{ TONE(D2),O4 },
+	{ TONE(B1),O2 },
+	
+	{ TONE(D2),O4 },
+	{ TONE(D2),O8 },
+	{ TONE(D2),O8 },
+	{ TONE(B1),O4 },
+	{ TONE(B1),O4 },
+	
+	{ TONE(G1),O4 },
+	{ TONE(G1),O4 },
+	{ TONE(E1),O4 },
+	{ TONE(D1),O4 },
+	
+	{ TONE(B1),O2 },
+	{ TONE(F1d),O4 },
+	{ TONE(F1d),O4 },
+
+	{ TONE(B1),O4 },
+	{ TONE(B1),O4 },
+	{ TONE(F1d),O2 },
+
+	{ TONE(G1d),O4 },
+	{ TONE(G1d),O8 },
+	{ TONE(G1d),O8 },
+	{ TONE(G1d),O4 },
+	{ TONE(G1d),O4 },
+	
+	
+	{ TONE(A1),O2 },
+	{ TONE(D1),O4 },
+	{ 0,O4 }
+};
+
 
 void LoadCustomChar(uint8_t idx,const char fl_zn[])
 {
@@ -222,7 +324,9 @@ uint8_t sound_buff_cnt;
 
 #define PLAY_NONE	0
 #define PLAY_INTRO	1
-#define PLAY_TOUCH	2
+#define PLAY_COLD	2
+#define PLAY_TOUCH	3
+#define PLAY_LETO	4
 
 void play_check()
 {
@@ -237,8 +341,21 @@ void play_check()
 			play_melody=PLAY_NONE;
 		}
 		break;
+		case PLAY_COLD:
+		mus_play_p(m_cold_p, PLAY_COLD_CNT,0);
+		if (mus_play_stop)
+		{
+			play_melody=PLAY_NONE;
+		}
+		break;
 		case PLAY_TOUCH:
 		mus_play(sound_buff, sound_buff_cnt,0);
+		if (mus_play_stop)
+		{
+			play_melody=PLAY_NONE;
+		}
+		case PLAY_LETO:
+		mus_play_p(m_leto_p, PLAY_LETO_CNT,0);
 		if (mus_play_stop)
 		{
 			play_melody=PLAY_NONE;
@@ -471,6 +588,11 @@ void print_temp(uint8_t data)
 
 void work_finish(void)
 {
+	if (conf_cur.sound)
+	{
+		play_melody=PLAY_LETO;
+		mus_play_p(m_leto_p, PLAY_LETO_CNT,1);
+	}
 	menu_mode=MENU_MODE_FINISH;
 	sh_menu=SHOW_MENU_FINISH;
 	tenn_on=0;
@@ -614,7 +736,7 @@ void get_temp(void)
 {
 	uint16_t tmp_temp;
 	tmp_temp=SPI_ReadTemp();
-//	LED_PORT^=LED_PIN;
+	LED_PORT^=LED_PIN;
 	termo_cnt++;
 	if (termo_cnt==TEMP_MAX_STEP)
 	{
