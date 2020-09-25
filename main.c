@@ -193,7 +193,7 @@ const note_t  m_cold_p[PLAY_COLD_CNT] PROGMEM=
 
 
 #define PLAY_LETO_CNT	67
-note_t m_leto_p[PLAY_LETO_CNT] =
+const note_t m_leto_p[PLAY_LETO_CNT] PROGMEM =
 {
 	{ TONE(D1),O8 },
 	{ TONE(D1),O8 },
@@ -587,7 +587,7 @@ void print_temp(uint8_t data)
 
 void work_finish(void)
 {
-	if (conf_cur.sound)
+	if ((conf_cur.sound))
 	{
 		play_melody=PLAY_LETO;
 		mus_play_p(m_leto_p, PLAY_LETO_CNT,1);
@@ -617,6 +617,11 @@ void work_step_next(void)
 		} 
 		else
 		{
+			if ((conf_cur.sound))
+			{
+				play_melody=PLAY_COLD;
+				mus_play_p(m_cold_p, PLAY_COLD_CNT,1);
+			}
 			lcd_gotoxy(9, 0);			
 			lcd_putc('0'+menu_mode_select_step);
 			print_temp(TEMP_CUR);

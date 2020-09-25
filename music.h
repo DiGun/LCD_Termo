@@ -95,7 +95,7 @@ uint8_t mus_play_stop;
 
 
 
-#define TEMPO	3
+#define TEMPO	2
 #define O16		TEMPO
 #define O8		TEMPO*2
 #define O4		TEMPO*4
