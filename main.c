@@ -21,6 +21,8 @@ typedef struct conf_st {
 	uint8_t d_up;
 	uint8_t d_down;
 	uint8_t time;
+	int8_t c_30;
+	int8_t c_120;
 } conf_t;
 
 conf_t conf_cur;
@@ -449,7 +451,7 @@ uint8_t menu_mode_conf;
 #define MENU_MODE_SEL_MAX	MODE_SEL_MAX
 #define MENU_MODE_SEL_MAXS	(MENU_MODE_SEL_MAX+1)
 
-#define MODE_CONF_MAX 4
+#define MODE_CONF_MAX 6
 
 
 
@@ -651,18 +653,18 @@ void work_step_next(void)
 void work_histerezis(void)
 {
 //	colder
-	if ((mode_work_cur.temp-conf_cur.d_down)>=termo_cur)
+	if (work_up==0)
 	{
-		if (work_up==0)
+		if ((mode_work_cur.temp-conf_cur.d_down)>=termo_cur)
 		{
 			tenn_on=1;
 			work_up=1;
 		}
 	}
 // hotter
-	if ((mode_work_cur.temp+conf_cur.d_up)<=termo_cur)
+	if (work_up==1)
 	{
-		if (work_up==1)
+		if ((mode_work_cur.temp+conf_cur.d_up)<=termo_cur)
 		{
 			tenn_on=0;
 			work_up=0;
@@ -1015,6 +1017,14 @@ void edit_conf_param(int8_t dir)
 			conf_cur.d_down+=dir;
 			print_param(conf_cur.d_down);
 		break;
+		case 5:
+		conf_cur.c_30+=dir;
+			print_param(conf_cur.c_30);
+			break;
+		case 6:
+			conf_cur.c_120+=dir;
+			print_param(conf_cur.c_120);
+		break;
 	}
 	print_blank(2);
 }
@@ -1123,6 +1133,13 @@ void menu(void)
 					case 4:
 						lcd_puts_P("Delta-:");
 					break;
+					case 5:
+						lcd_puts_P("Cr 30C:");
+					break;
+					case 6:
+						lcd_puts_P("Cr120C:");
+					break;
+					
 				}
 				edit_conf_param(0);
 			break;
