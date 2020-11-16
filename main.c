@@ -38,6 +38,9 @@ typedef struct mode_work_st {
 uint8_t termo[TEMP_MAX_STEP];
 uint8_t termo_cnt;
 uint8_t termo_cur;
+uint8_t k1;
+
+
 
 #define MODE_PARAM_CNT 3
 
@@ -477,6 +480,10 @@ inline void spi_init(void)
    SPSR = (0<<SPI2X);
 }
 
+void calk_coef_k1(void)
+{
+	k1=(90-conf_cur.c_30+conf_cur.c_120);
+}
 
 void eep_load(void)
 {
@@ -492,6 +499,7 @@ inline void eep_save(void)
 inline void eep_load_conf(void)
 {
 	eeprom_read_block(&conf_cur, &conf_e, sizeof(conf_t));
+	calk_coef_k1();
 }
 
 inline void eep_save_conf(void)
@@ -545,7 +553,7 @@ uint8_t avg_temp(void)
 	{
 		tmp_temp+=termo[f];
 	}
-	return tmp_temp/TEMP_MAX_STEP;
+	return (30+conf_cur.c_30)+(int16_t)(tmp_temp/TEMP_MAX_STEP-30)*k1/90;
 }
 
 
@@ -585,7 +593,6 @@ void print_temp(uint8_t data)
 		print_blank(4);
 	}
 }
-
 
 void work_finish(void)
 {
@@ -1020,10 +1027,12 @@ void edit_conf_param(int8_t dir)
 		case 5:
 		conf_cur.c_30+=dir;
 			print_param(conf_cur.c_30);
+			calk_coef_k1();			
 			break;
 		case 6:
 			conf_cur.c_120+=dir;
 			print_param(conf_cur.c_120);
+			calk_coef_k1();
 		break;
 	}
 	print_blank(2);
