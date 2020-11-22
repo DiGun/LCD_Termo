@@ -480,9 +480,9 @@ inline void spi_init(void)
    SPSR = (0<<SPI2X);
 }
 
-void calk_coef_k1(void)
+void calc_coef_k1(void)
 {
-	k1=(90-conf_cur.c_30+conf_cur.c_120);
+	k1=((90-conf_cur.c_30)+conf_cur.c_120);
 }
 
 void eep_load(void)
@@ -499,7 +499,7 @@ inline void eep_save(void)
 inline void eep_load_conf(void)
 {
 	eeprom_read_block(&conf_cur, &conf_e, sizeof(conf_t));
-	calk_coef_k1();
+	calc_coef_k1();
 }
 
 inline void eep_save_conf(void)
@@ -897,6 +897,14 @@ void print_param(uint8_t n)
 	print_blank(5-strlen(buff));
 }
 
+void print_param_signed(int8_t n)
+{
+	char buff[5];
+	itoa(n,buff,10);
+	lcd_puts(buff);
+	print_blank(5-strlen(buff));
+}
+
 uint8_t print_time(int8_t dir)
 {
 			uint16_t minut;
@@ -1026,13 +1034,13 @@ void edit_conf_param(int8_t dir)
 		break;
 		case 5:
 		conf_cur.c_30+=dir;
-			print_param(conf_cur.c_30);
-			calk_coef_k1();			
+			print_param_signed(conf_cur.c_30);
+			calc_coef_k1();			
 			break;
 		case 6:
 			conf_cur.c_120+=dir;
-			print_param(conf_cur.c_120);
-			calk_coef_k1();
+			print_param_signed(conf_cur.c_120);
+			calc_coef_k1();
 		break;
 	}
 	print_blank(2);
