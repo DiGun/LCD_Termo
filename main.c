@@ -23,6 +23,7 @@ typedef struct conf_st {
 	uint8_t time;
 	int8_t c_30;
 	int8_t c_120;
+	int8_t heating_mode;
 } conf_t;
 
 conf_t conf_cur;
@@ -145,6 +146,14 @@ void btn_check(void)
 	}
 }
 
+#define HTMODE_0_1	1
+#define HTMODE_0_2	2
+#define HTMODE_0_3	3
+#define HTMODE_1_2	4
+#define HTMODE_1_3	5
+#define HTMODE_2_3	6
+
+#define HTMODE_MAX	6
 
 const char PROGMEM char_down_p[8]  ={
 	0b00100,
@@ -454,7 +463,7 @@ uint8_t menu_mode_conf;
 #define MENU_MODE_SEL_MAX	MODE_SEL_MAX
 #define MENU_MODE_SEL_MAXS	(MENU_MODE_SEL_MAX+1)
 
-#define MODE_CONF_MAX 6
+#define MODE_CONF_MAX 7
 
 
 
@@ -1001,6 +1010,32 @@ void edit_mode_param(int8_t dir)
 	}
 }
 
+
+void print_param_heating(uint8_t n)
+{
+	switch(n)
+	{
+		case HTMODE_0_1:
+			lcd_puts_P("\00 \11");		
+			break;
+		case HTMODE_0_2:
+			lcd_puts_P("\00 \12");
+			break;
+		case HTMODE_0_3:
+			lcd_puts_P("\00 \13");
+			break;
+		case HTMODE_1_2:
+			lcd_puts_P("\01 \12");
+			break;
+		case HTMODE_1_3:
+			lcd_puts_P("\01 \13");
+			break;
+		case HTMODE_2_3:	
+			lcd_puts_P("\02 \13");
+			break;
+	}
+}
+
 void edit_conf_param(int8_t dir)
 {
 	lcd_gotoxy(7, 1);
@@ -1041,6 +1076,21 @@ void edit_conf_param(int8_t dir)
 			conf_cur.c_120+=dir;
 			print_param_signed(conf_cur.c_120);
 			calc_coef_k1();
+		break;
+		case 7:
+			conf_cur.heating_mode+=dir;
+			if (conf_cur.heating_mode==0)
+			{
+				conf_cur.heating_mode=HTMODE_MAX;
+			}
+			else
+			{
+				if (conf_cur.heating_mode>HTMODE_MAX)
+				{
+					conf_cur.heating_mode=HTMODE_0_1;
+				}
+			}
+			print_param_heating(conf_cur.heating_mode);
 		break;
 	}
 	print_blank(2);
@@ -1156,7 +1206,9 @@ void menu(void)
 					case 6:
 						lcd_puts_P("Cr120C:");
 					break;
-					
+					case 7:
+						lcd_puts_P("HtMode:");
+					break;
 				}
 				edit_conf_param(0);
 			break;
