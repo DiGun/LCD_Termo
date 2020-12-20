@@ -508,6 +508,7 @@ inline void eep_save(void)
 inline void eep_load_conf(void)
 {
 	eeprom_read_block(&conf_cur, &conf_e, sizeof(conf_t));
+	conf_cur.heating_mode=conf_cur.heating_mode==0?HTMODE_0_1:(conf_cur.heating_mode>HTMODE_MAX?HTMODE_MAX:conf_cur.heating_mode);	
 	calc_coef_k1();
 }
 
@@ -619,6 +620,48 @@ void work_finish(void)
 
 uint8_t work_up;
 
+
+void heating_mode_up(void)
+{
+	work_up=1;
+	switch(conf_cur.heating_mode)
+	{
+		case HTMODE_0_1:
+		tenn_on=1;
+		break;
+		case HTMODE_0_2:
+		case HTMODE_1_2:
+		tenn_on=2;
+		break;
+		case HTMODE_0_3:
+		case HTMODE_1_3:
+		case HTMODE_2_3:
+		tenn_on=3;
+		break;
+	}
+}
+
+void heating_mode_down(void)
+{
+	work_up=0;
+	switch(conf_cur.heating_mode)
+	{
+		case HTMODE_0_1:
+		case HTMODE_0_2:
+		case HTMODE_0_3:
+		tenn_on=0;
+		break;
+		case HTMODE_1_2:
+		case HTMODE_1_3:
+		tenn_on=1;
+		break;
+		case HTMODE_2_3:
+		tenn_on=2;
+		break;
+	}
+}
+
+
 void work_step_next(void)
 {
 	menu_mode_select_step++;
@@ -650,8 +693,7 @@ void work_step_next(void)
 					mode_work_cur.sec=0;
 				break;
 				case 2:
-					work_up=1;
-					tenn_on=1;
+					heating_mode_up();
 				break;
 				case 3:
 					tenn_on=0;
@@ -673,8 +715,7 @@ void work_histerezis(void)
 	{
 		if ((mode_work_cur.temp-conf_cur.d_down)>=termo_cur)
 		{
-			tenn_on=1;
-			work_up=1;
+			heating_mode_up();
 		}
 	}
 // hotter
@@ -682,8 +723,7 @@ void work_histerezis(void)
 	{
 		if ((mode_work_cur.temp+conf_cur.d_up)<=termo_cur)
 		{
-			tenn_on=0;
-			work_up=0;
+			heating_mode_down();
 		}
 	}
 }
@@ -1013,26 +1053,37 @@ void edit_mode_param(int8_t dir)
 
 void print_param_heating(uint8_t n)
 {
+	lcd_putc(0);
 	switch(n)
 	{
 		case HTMODE_0_1:
-			lcd_puts_P("\00 \11");		
-			break;
 		case HTMODE_0_2:
-			lcd_puts_P("\00 \12");
-			break;
 		case HTMODE_0_3:
-			lcd_puts_P("\00 \13");
+			lcd_putc('0');
 			break;
 		case HTMODE_1_2:
-			lcd_puts_P("\01 \12");
-			break;
 		case HTMODE_1_3:
-			lcd_puts_P("\01 \13");
+			lcd_putc('1');
 			break;
 		case HTMODE_2_3:	
-			lcd_puts_P("\02 \13");
+			lcd_putc('2');
 			break;
+	}
+	lcd_putc(1);
+	switch(n)
+	{
+		case HTMODE_0_1:
+			lcd_putc('1');
+		break;
+		case HTMODE_0_2:
+		case HTMODE_1_2:
+			lcd_putc('2');
+		break;
+		case HTMODE_0_3:
+		case HTMODE_1_3:
+		case HTMODE_2_3:
+			lcd_putc('3');
+		break;
 	}
 }
 
@@ -1079,17 +1130,7 @@ void edit_conf_param(int8_t dir)
 		break;
 		case 7:
 			conf_cur.heating_mode+=dir;
-			if (conf_cur.heating_mode==0)
-			{
-				conf_cur.heating_mode=HTMODE_MAX;
-			}
-			else
-			{
-				if (conf_cur.heating_mode>HTMODE_MAX)
-				{
-					conf_cur.heating_mode=HTMODE_0_1;
-				}
-			}
+			conf_cur.heating_mode=conf_cur.heating_mode==0?HTMODE_0_1:(conf_cur.heating_mode>HTMODE_MAX?HTMODE_MAX:conf_cur.heating_mode);
 			print_param_heating(conf_cur.heating_mode);
 		break;
 	}
@@ -1107,7 +1148,7 @@ void show_select(void)
 {
 	lcd_gotoxy(0, 1);
 	lcd_puts_P("Select");
-	print_blank(4);
+	print_blank(5);
 }
 
 void menu(void)
