@@ -508,7 +508,8 @@ inline void eep_save(void)
 inline void eep_load_conf(void)
 {
 	eeprom_read_block(&conf_cur, &conf_e, sizeof(conf_t));
-	conf_cur.heating_mode=conf_cur.heating_mode==0?HTMODE_0_1:(conf_cur.heating_mode>HTMODE_MAX?HTMODE_MAX:conf_cur.heating_mode);	
+	conf_cur.heating_mode=conf_cur.heating_mode==0?HTMODE_0_1:(conf_cur.heating_mode>HTMODE_MAX?HTMODE_MAX:conf_cur.heating_mode);
+	conf_cur.time=conf_cur.time<2?2:conf_cur.time;
 	calc_coef_k1();
 }
 
@@ -786,6 +787,8 @@ void work(void)
 					mode_work_cur.sec--;
 				}
 			break;
+			default: mode_work_cur.mode=0;
+
 		}
 		lcd_gotoxy(4, 1);
 		print_time(0);
@@ -1108,6 +1111,7 @@ void edit_conf_param(int8_t dir)
 		break;
 		case 2:
 			conf_cur.time+=dir;
+			conf_cur.time=conf_cur.time<2?2:conf_cur.time;
 			print_param(conf_cur.time);
 		break;
 		case 3:
